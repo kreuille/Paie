@@ -800,10 +800,17 @@ async function apiN8n(path, data) {
   const base = API_CONFIG.N8N_URL.replace(/\/$/, '');
   const response = await fetch(`${base}/${path}`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, gasUrl: API_CONFIG.BASE_URL }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  const text = await response.text();
+  if (!text || !text.trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Réponse n8n invalide : ${text.substring(0, 100)}`);
+  }
 }
 
 function lireEnBase64(fichier) {
