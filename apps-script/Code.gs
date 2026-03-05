@@ -10,7 +10,7 @@
 // CONFIGURATION GLOBALE — À PERSONNALISER
 // ============================================================
 const CONFIG = {
-  SPREADSHEET_ID: 'REMPLACER_PAR_VOTRE_ID', // ← Coller ici l'ID de votre Google Sheet
+  SPREADSHEET_ID: '1JQjw659ckGQf2DmYUBQBv3C_-iKcPCzUsoX0i8L4muk', // Google Sheet Paie
   DRIVE_ROOT_FOLDER_NAME: 'Fiches de Paie',
   DRIVE_SALARIES_FOLDER_NAME: 'Salariés',
   DRIVE_UPLOAD_FOLDER_NAME: 'Upload PDF',
