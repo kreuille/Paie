@@ -339,8 +339,7 @@ async function lancerTraitement() {
       if (!reponse.success && reponse.alert === 'PDF_CORROMPU') {
         await attendreConfirmationHumaine('modalPDFCorrompu');
       } else if (!reponse.success) {
-        const detail = reponse.error
-          || (Object.keys(reponse).length === 0 ? 'Réponse vide (vérifier le workflow n8n)' : JSON.stringify(reponse));
+        const detail = reponse.error || JSON.stringify(reponse);
         throw new Error('Erreur n8n upload : ' + detail);
       }
 
@@ -805,13 +804,19 @@ async function apiN8n(path, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, gasUrl: API_CONFIG.BASE_URL }),
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status} sur ${path}`);
   const text = await response.text();
-  if (!text || !text.trim()) return {};
+  if (!text || !text.trim()) {
+    throw new Error(
+      `n8n webhook "${path}" a répondu vide (HTTP ${response.status}).\n` +
+      `Dans n8n : mode Webhook → "Respond using Respond to Webhook node", ` +
+      `puis ajouter un nœud "Respond to Webhook" qui retourne {"success":true,"fileId":"...","mapping":[]}`
+    );
+  }
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(`Réponse n8n invalide : ${text.substring(0, 100)}`);
+    throw new Error(`Réponse n8n invalide (non-JSON) : ${text.substring(0, 200)}`);
   }
 }
 
