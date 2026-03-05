@@ -10,7 +10,7 @@
 // CONFIGURATION GLOBALE — À PERSONNALISER
 // ============================================================
 const CONFIG = {
-  SPREADSHEET_ID: '', // ID de votre Google Spreadsheet (laisser vide si ce script EST la spreadsheet)
+  SPREADSHEET_ID: 'REMPLACER_PAR_VOTRE_ID', // ← Coller ici l'ID de votre Google Sheet
   DRIVE_ROOT_FOLDER_NAME: 'Fiches de Paie',
   DRIVE_SALARIES_FOLDER_NAME: 'Salariés',
   DRIVE_UPLOAD_FOLDER_NAME: 'Upload PDF',
@@ -21,6 +21,18 @@ const CONFIG = {
   SHEET_SALARIES: 'Salariés',
   SHEET_LOGS: 'Logs',
 };
+
+// ============================================================
+// HELPER — Obtenir la Spreadsheet (standalone ou liée)
+// ============================================================
+function getSpreadsheet() {
+  if (CONFIG.SPREADSHEET_ID && CONFIG.SPREADSHEET_ID !== 'REMPLACER_PAR_VOTRE_ID') {
+    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('Aucune Spreadsheet trouvée. Renseignez CONFIG.SPREADSHEET_ID avec l\'ID de votre Google Sheet.');
+  return ss;
+}
 
 // ============================================================
 // INITIALISATION — Créer la structure Sheets & Drive
@@ -60,7 +72,7 @@ function initialiserApplication() {
  * Initialise les feuilles Google Sheets
  */
 function initialiserSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
 
   // --- Feuille "Salariés" ---
   let sheetSalaries = ss.getSheetByName(CONFIG.SHEET_SALARIES);
@@ -169,7 +181,7 @@ function obtenirOuCreerDossier(parentFolder, folderName) {
  */
 function ajouterSalarie(data) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_SALARIES);
 
     // Validation des données
@@ -231,7 +243,7 @@ function ajouterSalarie(data) {
  */
 function modifierSalarie(nomPrenom, data) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_SALARIES);
 
     const salarie = rechercherSalarie(nomPrenom);
@@ -278,7 +290,7 @@ function modifierSalarie(nomPrenom, data) {
  */
 function supprimerSalarie(nomPrenom) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_SALARIES);
 
     const salarie = rechercherSalarie(nomPrenom);
@@ -307,7 +319,7 @@ function supprimerSalarie(nomPrenom) {
  * Lister tous les salariés actifs
  */
 function listerSalaries(inclureInactifs = false) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   const sheet = ss.getSheetByName(CONFIG.SHEET_SALARIES);
   const data = sheet.getDataRange().getValues();
 
@@ -331,7 +343,7 @@ function listerSalaries(inclureInactifs = false) {
  * Rechercher un salarié par NOM_Prenom
  */
 function rechercherSalarie(nomPrenom) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   const sheet = ss.getSheetByName(CONFIG.SHEET_SALARIES);
   const data = sheet.getDataRange().getValues();
 
@@ -632,7 +644,7 @@ function envoyerEmailSyntheseAdmin(resultats, periode, fichierLogs) {
     `<tr><td style="padding:5px;border:1px solid #ddd;">❌ ${r.nomPrenom}</td><td style="padding:5px;border:1px solid #ddd;">${r.error}</td></tr>`
   ).join('');
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   const lienSheets = ss.getUrl();
 
   const rootFolder = obtenirOuCreerDossier(null, CONFIG.DRIVE_ROOT_FOLDER_NAME);
@@ -695,7 +707,7 @@ function envoyerEmailSyntheseAdmin(resultats, periode, fichierLogs) {
  */
 function loggerAction(action, fichier, salarie, statut, detail) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_LOGS);
     const dateHeure = Utilities.formatDate(new Date(), 'Europe/Zurich', 'dd/MM/yyyy HH:mm:ss');
 
@@ -870,7 +882,7 @@ function traiterConfirmationEnvoi(fileId, mapping, periode) {
  * Récupérer les derniers logs
  */
 function getLogs(limit = 50) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   const sheet = ss.getSheetByName(CONFIG.SHEET_LOGS);
   const data = sheet.getDataRange().getValues();
 
