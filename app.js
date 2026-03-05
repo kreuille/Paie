@@ -732,7 +732,6 @@ async function apiPost(data) {
 
   const response = await fetch(API_CONFIG.BASE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
