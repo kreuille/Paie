@@ -10,8 +10,9 @@
 // ============================================================
 const API_CONFIG = {
   // URL du WebApp Google Apps Script (après déploiement)
-  // Exemple: 'https://script.google.com/macros/s/VOTRE_ID/exec'
   BASE_URL: localStorage.getItem('gasUrl') || '',
+  // URL de base du webhook n8n (ex: https://my-n8n.cloud/webhook)
+  N8N_URL: localStorage.getItem('n8nUrl') || '',
 };
 
 // ============================================================
@@ -313,44 +314,69 @@ async function lancerTraitement() {
   document.getElementById('periodeField').style.display = 'none';
   document.getElementById('traitementPanel').style.display = 'block';
 
-  // ÉTAPE 1 — Upload
-  await executerEtape(1, 'Upload vers Google Drive...', async () => {
-    const base64 = await lireEnBase64(STATE.fichierPDF);
-    const reponse = await apiPost({
-      action: 'uploadPDF',
-      fileData: base64,
-      fileName: STATE.fichierPDF.name,
-      periode: STATE.periode
-    });
+  const utiliserN8n = !!API_CONFIG.N8N_URL;
 
-    if (!reponse.success) throw new Error(reponse.error);
-    STATE.fileId = reponse.fileId;
-    return reponse;
-  });
-
-  // ÉTAPE 2 — Validation PDF (côté client : vérification de base)
+  // ÉTAPE 2 — Validation PDF côté client (avant upload)
   await executerEtape(2, 'Validation du fichier...', async () => {
     const valide = await validerPDFClient(STATE.fichierPDF);
     if (!valide) {
-      // Alerte pour PDF suspect — attente confirmation humaine
       await attendreConfirmationHumaine('modalPDFCorrompu');
     }
     return { valide: true };
   });
 
-  // ÉTAPE 3 & 4 — Extraction + Matching (géré côté n8n/Apps Script)
-  // Le workflow n8n lit le PDF, extrait les noms, fait le matching
-  // puis rappelle l'UI avec le résultat via webhook
+  // ÉTAPE 1 — Upload + (si n8n) extraction et matching en une seule requête
+  await executerEtape(1, 'Upload vers Google Drive...', async () => {
+    const base64 = await lireEnBase64(STATE.fichierPDF);
 
+    if (utiliserN8n) {
+      const reponse = await apiN8n('paie-upload', {
+        fileData: base64,
+        fileName: STATE.fichierPDF.name,
+        periode: STATE.periode,
+      });
+
+      if (!reponse.success && reponse.alert === 'PDF_CORROMPU') {
+        await attendreConfirmationHumaine('modalPDFCorrompu');
+      } else if (!reponse.success) {
+        throw new Error(reponse.error || 'Erreur n8n upload');
+      }
+
+      STATE.fileId = reponse.fileId;
+      // n8n renvoie déjà le mapping extrait et matché
+      STATE.mappingPages = reponse.mapping || [];
+      return { pages: STATE.mappingPages.length };
+    } else {
+      const reponse = await apiPost({
+        action: 'uploadPDF',
+        fileData: base64,
+        fileName: STATE.fichierPDF.name,
+        periode: STATE.periode,
+      });
+      if (!reponse.success) throw new Error(reponse.error);
+      STATE.fileId = reponse.fileId;
+      return reponse;
+    }
+  });
+
+  // ÉTAPE 3 — Extraction (faite par n8n) ou simulation
   await executerEtape(3, 'Extraction des identités...', async () => {
-    // Simulation : en production, le workflow n8n traite le PDF
-    // et retourne les pages détectées via webhook
+    if (utiliserN8n) {
+      // Déjà effectué lors de l'étape 1 via n8n
+      return { pages: STATE.mappingPages.length };
+    }
     const mapping = await simulerExtractionPDF();
     STATE.mappingPages = mapping;
     return { pages: mapping.length };
   });
 
+  // ÉTAPE 4 — Matching (fait par n8n) ou vérification locale
   await executerEtape(4, 'Matching avec la base salariés...', async () => {
+    if (utiliserN8n) {
+      // Gérer les cas EMAIL_MANQUANT et NON_TROUVE retournés par n8n
+      const resultats = await verifierMappingAvecBase(STATE.mappingPages);
+      return resultats;
+    }
     const resultats = await verifierMappingAvecBase(STATE.mappingPages);
     return resultats;
   });
@@ -361,20 +387,32 @@ async function lancerTraitement() {
     return { confirmed: true };
   });
 
-  // ÉTAPES 6, 7, 8 — Après confirmation humaine
+  // ÉTAPES 6, 7, 8 — Traitement final (via n8n ou directement GAS)
   await executerEtape(6, 'Découpage et stockage des fiches...', async () => {
-    const reponse = await apiPost({
-      action: 'confirmerEnvoi',
-      fileId: STATE.fileId,
-      mapping: STATE.mappingPages.filter(m => m.inclure !== false),
-      periode: STATE.periode
-    });
+    const mappingFiltré = STATE.mappingPages.filter(m => m.inclure !== false);
+
+    let reponse;
+    if (utiliserN8n) {
+      reponse = await apiN8n('paie-confirmer', {
+        fileId: STATE.fileId,
+        mapping: mappingFiltré,
+        periode: STATE.periode,
+      });
+    } else {
+      reponse = await apiPost({
+        action: 'confirmerEnvoi',
+        fileId: STATE.fileId,
+        mapping: mappingFiltré,
+        periode: STATE.periode,
+      });
+    }
+
     if (!reponse.success) throw new Error(reponse.error || 'Erreur traitement');
     return reponse;
   });
 
   await executerEtape(7, 'Envoi des emails...', async () => {
-    // Inclus dans l'étape 6 (confirmerEnvoi traite tout)
+    // Inclus dans l'étape 6
     return { done: true };
   });
 
@@ -688,9 +726,15 @@ function afficherConfigurationPanel() {
   panel.innerHTML = `
     <h4 style="margin-bottom:10px;color:var(--primary)">⚙️ Configuration requise</h4>
     <p style="font-size:.85rem;margin-bottom:12px;">
-      Renseignez l'URL de votre WebApp Google Apps Script.
+      Renseignez les URLs de votre WebApp Google Apps Script et de votre webhook n8n.
     </p>
+    <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px;">URL Google Apps Script</label>
     <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..."
+      value="${API_CONFIG.BASE_URL}"
+      style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-size:.85rem;">
+    <label style="font-size:.8rem;font-weight:600;display:block;margin-bottom:4px;">URL webhook n8n (base)</label>
+    <input type="url" id="n8nUrlInput" placeholder="https://my-n8n.cloud/webhook"
+      value="${API_CONFIG.N8N_URL}"
       style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;margin-bottom:10px;font-size:.85rem;">
     <button onclick="sauvegarderURL()" class="btn btn-primary" style="width:100%">
       Enregistrer
@@ -699,15 +743,28 @@ function afficherConfigurationPanel() {
 }
 
 function sauvegarderURL() {
-  const url = document.getElementById('gasUrlInput').value.trim();
-  if (!url.startsWith('https://script.google.com')) {
-    toast('URL invalide. Elle doit commencer par https://script.google.com', 'error');
+  const gasUrl = document.getElementById('gasUrlInput').value.trim();
+  const n8nUrl = document.getElementById('n8nUrlInput').value.trim();
+
+  if (!gasUrl.startsWith('https://script.google.com')) {
+    toast('URL GAS invalide. Elle doit commencer par https://script.google.com', 'error');
     return;
   }
-  localStorage.setItem('gasUrl', url);
-  API_CONFIG.BASE_URL = url;
+  if (n8nUrl && !n8nUrl.startsWith('https://')) {
+    toast('URL n8n invalide. Elle doit commencer par https://', 'error');
+    return;
+  }
+
+  localStorage.setItem('gasUrl', gasUrl);
+  API_CONFIG.BASE_URL = gasUrl;
+
+  if (n8nUrl) {
+    localStorage.setItem('n8nUrl', n8nUrl);
+    API_CONFIG.N8N_URL = n8nUrl;
+  }
+
   document.getElementById('configPanel')?.remove();
-  toast('URL enregistrée avec succès !', 'success');
+  toast('Configuration enregistrée !', 'success');
   testConnexion();
   chargerSalaries();
 }
@@ -733,6 +790,17 @@ async function apiPost(data) {
   const response = await fetch(API_CONFIG.BASE_URL, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+async function apiN8n(path, data) {
+  if (!API_CONFIG.N8N_URL) throw new Error('URL n8n non configurée');
+  const base = API_CONFIG.N8N_URL.replace(/\/$/, '');
+  const response = await fetch(`${base}/${path}`, {
+    method: 'POST',
+    body: JSON.stringify({ ...data, gasUrl: API_CONFIG.BASE_URL }),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json();
