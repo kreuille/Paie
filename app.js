@@ -804,7 +804,6 @@ async function apiN8n(path, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, gasUrl: API_CONFIG.BASE_URL }),
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status} sur ${path}`);
   const text = await response.text();
   if (!text || !text.trim()) {
     throw new Error(
@@ -813,11 +812,17 @@ async function apiN8n(path, data) {
       `puis ajouter un nœud "Respond to Webhook" qui retourne {"success":true,"fileId":"...","mapping":[]}`
     );
   }
+  let json;
   try {
-    return JSON.parse(text);
+    json = JSON.parse(text);
   } catch {
-    throw new Error(`Réponse n8n invalide (non-JSON) : ${text.substring(0, 200)}`);
+    throw new Error(`Réponse n8n invalide (non-JSON, HTTP ${response.status}) : ${text.substring(0, 200)}`);
   }
+  // Laisser l'appelant gérer success: false plutôt que de throw sur le code HTTP
+  if (!response.ok && json.success === undefined) {
+    throw new Error(`HTTP ${response.status} sur ${path} : ${json.error || text.substring(0, 200)}`);
+  }
+  return json;
 }
 
 function lireEnBase64(fichier) {
