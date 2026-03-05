@@ -339,7 +339,9 @@ async function lancerTraitement() {
       if (!reponse.success && reponse.alert === 'PDF_CORROMPU') {
         await attendreConfirmationHumaine('modalPDFCorrompu');
       } else if (!reponse.success) {
-        throw new Error(reponse.error || 'Erreur n8n upload');
+        const detail = reponse.error
+          || (Object.keys(reponse).length === 0 ? 'Réponse vide (vérifier le workflow n8n)' : JSON.stringify(reponse));
+        throw new Error('Erreur n8n upload : ' + detail);
       }
 
       STATE.fileId = reponse.fileId;
