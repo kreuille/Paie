@@ -11,8 +11,8 @@
 const API_CONFIG = {
   // URL du WebApp Google Apps Script (après déploiement)
   BASE_URL: localStorage.getItem('gasUrl') || '',
-  // URL de base du webhook n8n (ex: https://my-n8n.cloud/webhook)
-  N8N_URL: localStorage.getItem('n8nUrl') || '',
+  // URL de base du webhook n8n
+  N8N_URL: localStorage.getItem('n8nUrl') || 'https://n8n.guedou.com/webhook',
 };
 
 // ============================================================
