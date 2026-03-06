@@ -851,14 +851,24 @@ function extrairePDF(fileId) {
     const file = DriveApp.getFileById(fileId);
     const blob = file.getBlob().setContentType('application/pdf');
 
-    // Convertir le PDF en Google Doc via le service avancé Drive (gère l'auth automatiquement)
-    const converted = Drive.Files.insert(
-      { title: 'tmp_paie_extract_' + fileId, mimeType: 'application/vnd.google-apps.document' },
-      blob,
-      { convert: true }
+    // Convertir le PDF en Google Doc via files.copy (Drive API v3)
+    // Le fichier est déjà dans Drive → on le copie avec le mimeType Google Doc (conversion OCR)
+    const copyResp = UrlFetchApp.fetch(
+      'https://www.googleapis.com/drive/v3/files/' + fileId + '/copy',
+      {
+        method: 'POST',
+        contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+        payload: JSON.stringify({
+          name: 'tmp_paie_extract_' + fileId,
+          mimeType: 'application/vnd.google-apps.document'
+        }),
+        muteHttpExceptions: true
+      }
     );
+    const converted = JSON.parse(copyResp.getContentText());
     if (!converted.id) {
-      throw new Error('Conversion PDF→Doc échouée : Drive.Files.insert a retourné sans ID');
+      throw new Error('Conversion PDF→Doc échouée (files.copy): ' + copyResp.getContentText().substring(0, 300));
     }
 
     // Lire le texte brut (les sauts de page Google Doc sont \f)
