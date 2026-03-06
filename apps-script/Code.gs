@@ -843,15 +843,53 @@ function extrairePDF(fileId) {
     };
     const converted = Drive.Files.insert(resource, blob, { convert: true });
 
-    // Lire le texte brut
+    // Lire le texte brut (les sauts de page Google Doc sont \f)
     const doc = DocumentApp.openById(converted.id);
     const fullText = doc.getBody().getText();
 
     // Supprimer le document temporaire
     DriveApp.getFileById(converted.id).setTrashed(true);
 
-    // Découper par page : chaque fiche commence par "FICHE DE PAIE"
-    const rawSections = fullText.split(/FICHE\s+DE\s+PAIE/i).filter(s => s.trim().length > 0);
+    Logger.log('extrairePDF — premiers 500 chars : ' + fullText.substring(0, 500));
+
+    // ── Stratégie de découpage (ordre de priorité) ───────────────────────────
+    // 1. Sauts de page \f (le plus fiable — une fiche = une page PDF)
+    // 2. Mots-clés courants sur les bulletins de salaire CH/FR
+    // 3. Tout le texte comme une seule section (fallback)
+    var rawSections = [];
+
+    if (fullText.indexOf('\f') !== -1) {
+      // Stratégie 1 : sauts de page natifs
+      rawSections = fullText.split('\f').filter(function(s) { return s.trim().length > 10; });
+      Logger.log('extrairePDF — split par \\f : ' + rawSections.length + ' section(s)');
+    }
+
+    if (rawSections.length === 0) {
+      // Stratégie 2 : mots-clés de début de fiche (multi-langue CH)
+      var motsCles = [
+        'FICHE\\s+DE\\s+PAIE',
+        'BULLETIN\\s+DE\\s+(SALAIRE|PAIE)',
+        'LOHNABRECHNUNG',
+        'LOHNAUSWEIS',
+        'D[EÉ]COMPTE\\s+DE\\s+SALAIRE',
+        'BULLETIN\\s+DE\\s+SALAIRE',
+        'FICHE\\s+SALARIALE'
+      ];
+      for (var k = 0; k < motsCles.length; k++) {
+        var re = new RegExp(motsCles[k], 'i');
+        if (re.test(fullText)) {
+          rawSections = fullText.split(re).filter(function(s) { return s.trim().length > 10; });
+          Logger.log('extrairePDF — split par "' + motsCles[k] + '" : ' + rawSections.length + ' section(s)');
+          break;
+        }
+      }
+    }
+
+    if (rawSections.length === 0) {
+      // Stratégie 3 : tout le texte comme une seule section (debug)
+      rawSections = [fullText];
+      Logger.log('extrairePDF — aucun découpage possible, fallback texte complet');
+    }
 
     const pages = rawSections.map(function(section, idx) {
       const lignes = section.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
@@ -859,12 +897,13 @@ function extrairePDF(fileId) {
       return {
         pageIndex: idx,
         texte: lignes.slice(0, 5).join(' | '),
+        debugLines: lignes.slice(0, 15),   // 15 premières lignes pour diagnostiquer
         nomPrenom: nomPrenom,
         pageBase64: null
       };
     });
 
-    Logger.log('extrairePDF : ' + pages.length + ' fiche(s) détectée(s) — ' + pages.map(function(p){ return p.nomPrenom; }).join(', '));
+    Logger.log('extrairePDF : ' + pages.length + ' fiche(s) — ' + pages.map(function(p){ return p.nomPrenom || '(vide)'; }).join(', '));
 
     return { success: true, pages: pages, totalPages: pages.length };
 
