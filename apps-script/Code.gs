@@ -403,9 +403,10 @@ function traiterUploadPDF(fileData, fileName, periode) {
       ? extraction.pages
       : [];
 
-    if (pages.length === 0) {
+    const extractionError = pages.length === 0 ? (extraction.error || 'Aucun détail — vérifier logs GAS') : null;
+    if (extractionError) {
       loggerAction('UPLOAD_PDF', nomFichierStocke, '', '⚠️ Extraction vide',
-        'extrairePDF a retourné 0 page. Erreur : ' + (extraction.error || 'aucune'));
+        'extrairePDF a retourné 0 page. Erreur : ' + extractionError);
     }
 
     return {
@@ -414,7 +415,8 @@ function traiterUploadPDF(fileData, fileName, periode) {
       fileName: nomFichierStocke,
       pages: pages,
       totalPages: pages.length,
-      message: 'PDF reçu, stocké et analysé.',
+      extractionError: extractionError,
+      message: pages.length > 0 ? 'PDF reçu, stocké et analysé.' : 'PDF stocké mais extraction échouée.',
       etape: 1
     };
 
