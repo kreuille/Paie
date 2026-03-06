@@ -853,7 +853,7 @@ function doGet(e) {
         fetchTest = { error: fe.message };
       }
       result = {
-        version: '2026-03-06-v3-files-copy',
+        version: '2026-03-06-v4-no-documentapp',
         hasToken: !!token,
         tokenLength: token ? token.length : 0,
         fetchTest: fetchTest
@@ -881,35 +881,41 @@ function doGet(e) {
  */
 function extrairePDF(fileId) {
   try {
-    const file = DriveApp.getFileById(fileId);
-    const blob = file.getBlob().setContentType('application/pdf');
+    const token = ScriptApp.getOAuthToken();
+    const headers = { Authorization: 'Bearer ' + token };
+    const base = 'https://www.googleapis.com/drive/v3/files/';
 
-    // Convertir le PDF en Google Doc via files.copy (Drive API v3)
-    // Le fichier est déjà dans Drive → on le copie avec le mimeType Google Doc (conversion OCR)
-    const copyResp = UrlFetchApp.fetch(
-      'https://www.googleapis.com/drive/v3/files/' + fileId + '/copy',
-      {
-        method: 'POST',
-        contentType: 'application/json',
-        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-        payload: JSON.stringify({
-          name: 'tmp_paie_extract_' + fileId,
-          mimeType: 'application/vnd.google-apps.document'
-        }),
-        muteHttpExceptions: true
-      }
-    );
-    const converted = JSON.parse(copyResp.getContentText());
-    if (!converted.id) {
-      throw new Error('Conversion PDF→Doc échouée (files.copy): ' + copyResp.getContentText().substring(0, 300));
+    // Étape 1 — Copier le PDF en Google Doc (conversion OCR, Drive natif)
+    // Le fichier est déjà dans Drive → aucun upload, juste une copie avec conversion de mimeType
+    const copyResp = UrlFetchApp.fetch(base + fileId + '/copy', {
+      method: 'POST',
+      contentType: 'application/json',
+      headers: headers,
+      payload: JSON.stringify({
+        name: 'tmp_paie_extract_' + fileId,
+        mimeType: 'application/vnd.google-apps.document'
+      }),
+      muteHttpExceptions: true
+    });
+    const copyResult = JSON.parse(copyResp.getContentText());
+    if (!copyResult.id) {
+      throw new Error('Conversion PDF→Doc échouée (files.copy ' + copyResp.getResponseCode() + '): ' + copyResp.getContentText().substring(0, 300));
     }
+    const docId = copyResult.id;
 
-    // Lire le texte brut (les sauts de page Google Doc sont \f)
-    const doc = DocumentApp.openById(converted.id);
-    const fullText = doc.getBody().getText();
+    // Étape 2 — Exporter le Google Doc en texte brut via UrlFetchApp (pas DocumentApp)
+    const exportResp = UrlFetchApp.fetch(base + docId + '/export?mimeType=text/plain', {
+      headers: headers,
+      muteHttpExceptions: true
+    });
+    const fullText = exportResp.getContentText();
 
-    // Supprimer le document temporaire
-    DriveApp.getFileById(converted.id).setTrashed(true);
+    // Étape 3 — Supprimer le doc temporaire via Drive API (pas DriveApp)
+    UrlFetchApp.fetch(base + docId, {
+      method: 'DELETE',
+      headers: headers,
+      muteHttpExceptions: true
+    });
 
     Logger.log('extrairePDF — premiers 500 chars : ' + fullText.substring(0, 500));
 
