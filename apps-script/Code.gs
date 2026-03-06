@@ -39,6 +39,18 @@ function getSpreadsheet() {
 // ============================================================
 
 /**
+ * À LANCER UNE SEULE FOIS depuis l'éditeur pour accorder le scope UrlFetchApp.
+ * Nécessaire pour que extrairePDF puisse appeler googleapis.com.
+ */
+function autoriserUrlFetch() {
+  const r = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true
+  });
+  Logger.log('✅ UrlFetchApp autorisé. Statut: ' + r.getResponseCode());
+}
+
+/**
  * Fonction principale d'initialisation — à lancer une seule fois
  * depuis l'éditeur Apps Script
  */
