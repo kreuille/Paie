@@ -90,7 +90,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $('validation-entree').item.json.gasUrl }}",
+        "url": "={{ $json.gasUrl }}",
         "sendBody": true,
         "contentType": "json",
         "body": "={{ JSON.stringify({ action: 'uploadPDF', fileData: $json.fileData, fileName: $json.fileName, periode: $json.periode }) }}",
@@ -131,7 +131,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Récupérer le fileId retourné par GAS\n// GAS peut retourner { fileId } ou { success: true, fileId } ou { data: { fileId } }\nconst gasReponse = $input.first().json;\nconst fileId = gasReponse.fileId || (gasReponse.data && gasReponse.data.fileId) || null;\n\nif (!fileId) {\n  throw new Error('GAS n\\'a pas retourné de fileId. Réponse : ' + JSON.stringify(gasReponse).substring(0, 200));\n}\n\nconst fileData = $('validation-entree').item.json.fileData;\nconst buffer = Buffer.from(fileData, 'base64');\n\nlet pages = [];\n\ntry {\n  // Option 1: Utiliser pdf-parse (si disponible dans n8n)\n  // const pdfParse = require('pdf-parse');\n  // const pdfData = await pdfParse(buffer);\n  \n  // Option 2: Appel à l'API Google Cloud Document AI\n  // (configuré séparément via credentials n8n)\n  \n  // SIMULATION — Remplacer par l'extraction réelle en production\n  // Structure retournée: [{ pageIndex, texte, nomPrenom }]\n  pages = [\n    { pageIndex: 0, texte: 'NOM_Prenom détecté page 1', nomPrenom: '' }\n  ];\n  \n  // En production avec pdf-parse:\n  // const pdfData = await require('pdf-parse')(buffer);\n  // pdfData.text.split('\\f').forEach((pageText, idx) => {\n  //   const lignes = pageText.trim().split('\\n').filter(l => l.trim());\n  //   const premiereLigne = lignes[0] || '';\n  //   const match = premiereLigne.match(/^([A-Z]{2,})[\\s_]([A-Za-zÀ-ÿ]+)/);\n  //   if (match) {\n  //     pages.push({ pageIndex: idx, nomPrenom: match[1] + '_' + match[2] });\n  //   }\n  // });\n\n} catch (error) {\n  throw new Error('Erreur extraction PDF: ' + error.message);\n}\n\nreturn [{ json: { pages, totalPages: pages.length, fileId } }];"
+        "jsCode": "// Récupérer le fileId retourné par GAS\nconst gasReponse = $input.first().json;\nconst fileId = gasReponse.fileId || (gasReponse.data && gasReponse.data.fileId) || null;\n\nif (!fileId) {\n  throw new Error('GAS n\\'a pas retourné de fileId. Réponse : ' + JSON.stringify(gasReponse).substring(0, 200));\n}\n\n// Récupérer fileData depuis le nœud de validation (double quotes pour l'apostrophe)\nconst validationData = $(\"Validation des données d'entrée\").item.json;\nconst fileData = validationData.fileData;\nconst gasUrl = validationData.gasUrl;\nconst periode = validationData.periode;\n\nconst buffer = Buffer.from(fileData, 'base64');\n\nlet pages = [];\n\ntry {\n  // SIMULATION — Remplacer par l'extraction réelle en production\n  // En production : utiliser pdf-parse ou Google Cloud Document AI\n  pages = [\n    { pageIndex: 0, texte: 'NOM_Prenom détecté page 1', nomPrenom: '' }\n  ];\n} catch (error) {\n  throw new Error('Erreur extraction PDF: ' + error.message);\n}\n\n// Propager gasUrl et periode pour les nœuds suivants\nreturn [{ json: { pages, totalPages: pages.length, fileId, gasUrl, periode } }];"
       },
       "id": "extraire-texte-pdf",
       "name": "Extraire le texte du PDF",
@@ -162,7 +162,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $('validation-entree').item.json.gasUrl }}",
+        "url": "={{ $json.gasUrl }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -213,7 +213,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Faire correspondre chaque page avec un salarié\nconst pages = $('extraire-texte-pdf').item.json.pages;\nconst fileId = $('extraire-texte-pdf').item.json.fileId;\nconst periode = $('validation-entree').item.json.periode;\n\n// La réponse GAS peut être un tableau direct ou encapsulée dans { salaries: [...] } ou { data: [...] }\nconst gasReponse = $input.first().json;\nlet salaries = [];\nif (Array.isArray(gasReponse)) {\n  salaries = gasReponse;\n} else if (Array.isArray(gasReponse.salaries)) {\n  salaries = gasReponse.salaries;\n} else if (Array.isArray(gasReponse.data)) {\n  salaries = gasReponse.data;\n}\n\nconst resultatsMatching = [];\nconst nonTrouves = [];\nconst emailsManquants = [];\n\nfor (const page of pages) {\n  const salarie = salaries.find(s => s.nomPrenom === page.nomPrenom);\n  \n  if (!salarie) {\n    nonTrouves.push(page.nomPrenom);\n    resultatsMatching.push({\n      ...page,\n      statut: 'NON_TROUVE',\n      email: null,\n      inclure: false\n    });\n  } else if (!salarie.email) {\n    emailsManquants.push(page.nomPrenom);\n    resultatsMatching.push({\n      ...page,\n      statut: 'EMAIL_MANQUANT',\n      email: null,\n      idDossierDrive: salarie.idDossierDrive,\n      inclure: true\n    });\n  } else {\n    resultatsMatching.push({\n      ...page,\n      statut: 'OK',\n      email: salarie.email,\n      idDossierDrive: salarie.idDossierDrive,\n      inclure: true\n    });\n  }\n}\n\nreturn [{\n  json: {\n    mapping: resultatsMatching,\n    nonTrouves,\n    emailsManquants,\n    nbTotal: resultatsMatching.length,\n    nbOk: resultatsMatching.filter(m => m.statut === 'OK').length,\n    nbProblemes: nonTrouves.length + emailsManquants.length,\n    fileId,\n    periode\n  }\n}];"
+        "jsCode": "// Faire correspondre chaque page avec un salarié\nconst extraitData = $(\"Extraire le texte du PDF\").item.json;\nconst pages = extraitData.pages;\nconst fileId = extraitData.fileId;\nconst periode = extraitData.periode;\n\n// La réponse GAS peut être un tableau direct ou encapsulée\nconst gasReponse = $input.first().json;\nlet salaries = [];\nif (Array.isArray(gasReponse)) {\n  salaries = gasReponse;\n} else if (Array.isArray(gasReponse.salaries)) {\n  salaries = gasReponse.salaries;\n} else if (Array.isArray(gasReponse.data)) {\n  salaries = gasReponse.data;\n}\n\nconst resultatsMatching = [];\nconst nonTrouves = [];\nconst emailsManquants = [];\n\nfor (const page of pages) {\n  const salarie = salaries.find(s => s.nomPrenom === page.nomPrenom);\n\n  if (!salarie) {\n    nonTrouves.push(page.nomPrenom);\n    resultatsMatching.push({ ...page, statut: 'NON_TROUVE', email: null, inclure: false });\n  } else if (!salarie.email) {\n    emailsManquants.push(page.nomPrenom);\n    resultatsMatching.push({ ...page, statut: 'EMAIL_MANQUANT', email: null, idDossierDrive: salarie.idDossierDrive, inclure: true });\n  } else {\n    resultatsMatching.push({ ...page, statut: 'OK', email: salarie.email, idDossierDrive: salarie.idDossierDrive, inclure: true });\n  }\n}\n\nreturn [{\n  json: {\n    mapping: resultatsMatching,\n    nonTrouves,\n    emailsManquants,\n    nbTotal: resultatsMatching.length,\n    nbOk: resultatsMatching.filter(m => m.statut === 'OK').length,\n    nbProblemes: nonTrouves.length + emailsManquants.length,\n    fileId,\n    periode\n  }\n}];"
       },
       "id": "faire-matching",
       "name": "Faire le matching NOM_Prenom → Salarié",
@@ -495,7 +495,7 @@
     "instanceId": "gestionnaire-paie-suisse"
   },
   "pinData": {},
-  "versionId": "1.1.0",
+  "versionId": "1.2.0",
   "triggerCount": 2,
   "tags": [
     "paie",
