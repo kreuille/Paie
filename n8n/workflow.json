@@ -10,14 +10,11 @@
           "allowedOrigins": "*"
         }
       },
-      "id": "webhook-reception",
+      "id": "a9be647f-3eb0-434e-8f18-3d5d9e6c02e5",
       "name": "Webhook — Réception PDF",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        200,
-        300
-      ],
+      "position": [1712, 1056],
       "webhookId": "paie-upload-webhook",
       "notes": "Point d'entrée : reçoit le PDF en base64 depuis l'UI Web.\nPayload attendu: { fileData, fileName, periode, gasUrl }"
     },
@@ -25,30 +22,25 @@
       "parameters": {
         "jsCode": "// Validation des données d'entrée\nconst body = $input.first().json.body;\n\nif (!body || !body.fileData) {\n  throw new Error('fileData manquant dans la requête');\n}\nif (!body.periode || !/^\\d{2}-\\d{4}$/.test(body.periode)) {\n  throw new Error('Période invalide. Format requis: MM-YYYY');\n}\nif (!body.gasUrl) {\n  throw new Error('URL Google Apps Script manquante');\n}\n\n// Décoder le base64 en buffer\nconst buffer = Buffer.from(body.fileData, 'base64');\n\n// Vérifier le header PDF\nconst header = buffer.slice(0, 5).toString('ascii');\nconst estPDF = header.startsWith('%PDF');\n\nreturn [{\n  json: {\n    fileData: body.fileData,\n    fileName: body.fileName || 'upload.pdf',\n    periode: body.periode,\n    gasUrl: body.gasUrl,\n    estPDF: estPDF,\n    tailleFichier: buffer.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "id": "validation-entree",
+      "id": "074b32e9-d709-4d85-8e3b-5fc4c311ab11",
       "name": "Validation des données d'entrée",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        420,
-        300
-      ],
+      "position": [1936, 1056],
       "onError": "continueErrorOutput",
       "notes": "Valide la présence des champs obligatoires et vérifie l'en-tête PDF."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Validation échouée : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Validation échouée : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-validation",
+      "id": "2a02a1c0-092c-41e7-a3d3-1d5ba8878593",
       "name": "Réponse Erreur Validation",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        640,
-        480
-      ],
+      "position": [2160, 1248],
       "notes": "Retourne l'erreur de validation à l'UI."
     },
     {
@@ -62,29 +54,24 @@
           ]
         }
       },
-      "id": "check-pdf-valide",
+      "id": "0c1088ab-af18-47c8-bcfe-8e9a10f83159",
       "name": "PDF valide ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        640,
-        300
-      ],
+      "position": [2160, 1056],
       "notes": "Branche TRUE = PDF valide → continuer\nBranche FALSE = PDF suspect → réponse d'alerte à l'UI"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, alert: 'PDF_CORROMPU', message: 'Le fichier semble corrompu ou illisible. Voulez-vous continuer quand même ?' }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, alert: 'PDF_CORROMPU', message: 'Le fichier semble corrompu ou illisible. Voulez-vous continuer quand même ?' }) }}",
+        "options": {}
       },
-      "id": "reponse-pdf-corrompu",
+      "id": "64cdcd21-b2a5-47ed-8a13-8ebeb82cde73",
       "name": "Réponse PDF Corrompu",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        860,
-        480
-      ],
+      "position": [2384, 1248],
       "notes": "Retourne une alerte à l'UI pour décision humaine."
     },
     {
@@ -92,15 +79,6 @@
         "method": "POST",
         "url": "={{ $json.gasUrl }}",
         "sendBody": true,
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 60000
-        },
-        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
@@ -120,67 +98,64 @@
               "value": "={{ $json.periode }}"
             }
           ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
         }
       },
-      "id": "gas-stocker-pdf",
+      "id": "545418de-7156-4a47-aa73-4f3b2cbec91c",
       "name": "GAS — Stocker PDF dans Drive",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        860,
-        300
-      ],
+      "position": [2384, 1056],
       "onError": "continueErrorOutput",
       "notes": "Appelle Google Apps Script pour stocker le PDF dans le dossier 'Upload PDF'.\nUtilise contentType JSON pour supporter les gros fichiers base64."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, debug: $json, error: \"Erreur stockage Drive : \" + ($json.error?.message || $json.error || $json.message || JSON.stringify($json).substring(0, 300)) }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, debug: $json, error: \"Erreur stockage Drive : \" + ($json.error?.message || $json.error || $json.message || JSON.stringify($json).substring(0, 300)) }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-drive",
+      "id": "1298233c-1ffd-4324-a0cd-365d2e898ff9",
       "name": "Réponse Erreur Drive",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        1080,
-        480
-      ],
+      "position": [2592, 1248],
       "notes": "Retourne l'erreur GAS à l'UI."
     },
     {
       "parameters": {
         "jsCode": "// ── Récupérer le fileId retourné par GAS ─────────────────────────────────────\nconst gasReponse = $input.first().json;\nconst fileId = gasReponse.fileId || (gasReponse.data && gasReponse.data.fileId) || null;\n\nif (!fileId) {\n  throw new Error('GAS n\\'a pas retourné de fileId. Réponse : ' + JSON.stringify(gasReponse).substring(0, 200));\n}\n\nconst validationData = $(\"Validation des données d'entrée\").item.json;\nconst fileData = validationData.fileData;\nconst gasUrl = validationData.gasUrl;\nconst periode = validationData.periode;\nconst buffer = Buffer.from(fileData, 'base64');\n\n// ── Extraction NOM_Prenom sur lignes séparées ────────────────────────────────\nfunction extraireNomPrenom(lignes) {\n  for (const ligne of lignes.slice(0, 20)) {\n    // Pattern 1 : MAJUSCULES Prénom isolé sur sa ligne — ex: \"DUPONT Jean\"\n    const m1 = ligne.match(/^([A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ][A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ\\-\\']{1,})\\s+([A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ][a-zàâäéèêëïîùûüçœæ\\-\\']{1,})$/);\n    if (m1) return m1[1].trim() + '_' + m1[2].trim();\n\n    // Pattern 2 : label \"Nom :\", \"Employé :\", etc.\n    const m2 = ligne.match(/(?:Nom|Employé|Collaborateur|Salarié)\\s*[:\\-]\\s*([A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ][a-zA-ZÀ-ÿ\\s\\-\\']{2,})/i);\n    if (m2) {\n      const parts = m2[1].trim().split(/\\s+/);\n      if (parts.length >= 2) return parts[0].toUpperCase() + '_' + parts[1];\n    }\n\n    // Pattern 3 : Prénom NOM — ex: \"Jean DUPONT\"\n    const m3 = ligne.match(/^([A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ][a-zàâäéèêëïîùûüçœæ\\-\\']{1,})\\s+([A-ZÀÂÄÉÈÊËÏÎÙÛÜÇ]{2,})$/);\n    if (m3) return m3[2] + '_' + m3[1];\n  }\n  return '';\n}\n\n// ── Extraction texte par page via coordonnées Y ───────────────────────────────\nasync function extractPageLines(pdfPage) {\n  const content = await pdfPage.getTextContent();\n  const lineMap = new Map();\n  for (const item of content.items) {\n    if (!item.str || !item.str.trim()) continue;\n    const y = Math.round(item.transform[5]);\n    if (!lineMap.has(y)) lineMap.set(y, []);\n    lineMap.get(y).push({ x: item.transform[4], str: item.str });\n  }\n  const sortedYs = [...lineMap.keys()].sort((a, b) => b - a);\n  return sortedYs.map(y => {\n    return lineMap.get(y).sort((a, b) => a.x - b.x).map(i => i.str).join(' ').trim();\n  }).filter(l => l.length > 0);\n}\n\nlet pages = [];\n\ntry {\n  // pdfjs-dist v4+ est ESM — utiliser await import()\n  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');\n  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });\n  const pdfDoc = await loadingTask.promise;\n  const numPages = pdfDoc.numPages;\n\n  // Charger pdf-lib pour le découpage page par page\n  let pdfDocLib = null;\n  try {\n    const { PDFDocument } = await import('pdf-lib');\n    pdfDocLib = await PDFDocument.load(buffer);\n  } catch (e) { /* pdf-lib absent — fallback PDF complet */ }\n\n  for (let i = 1; i <= numPages; i++) {\n    const page = await pdfDoc.getPage(i);\n    const lignes = await extractPageLines(page);\n    const nomPrenom = extraireNomPrenom(lignes);\n\n    // Découpage individuel si pdf-lib disponible\n    let pageBase64 = null;\n    if (pdfDocLib) {\n      try {\n        const { PDFDocument: PDFDoc } = await import('pdf-lib');\n        const singleDoc = await PDFDoc.create();\n        const [cp] = await singleDoc.copyPages(pdfDocLib, [i - 1]);\n        singleDoc.addPage(cp);\n        const bytes = await singleDoc.save();\n        pageBase64 = Buffer.from(bytes).toString('base64');\n      } catch (e) { /* découpage échoué pour cette page */ }\n    }\n\n    pages.push({\n      pageIndex: i - 1,\n      texte: lignes.slice(0, 5).join(' | '),\n      nomPrenom,\n      pageBase64\n    });\n  }\n\n} catch (error) {\n  // ── Fallback : appel GAS pour extraction via Drive PDF→Google Doc ──────────\n  console.log('pdfjs-dist indisponible (' + error.message.substring(0, 100) + ') — appel GAS extrairePDF');\n  try {\n    const gasResponse = await fetch(gasUrl, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ action: 'extrairePDF', fileId })\n    });\n    const gasData = await gasResponse.json();\n    if (gasData.success && Array.isArray(gasData.pages) && gasData.pages.length > 0) {\n      pages = gasData.pages;\n    } else {\n      const errMsg = gasData.error || 'Réponse GAS vide';\n      pages = [{\n        pageIndex: 0,\n        texte: 'Extraction GAS échouée — ' + errMsg,\n        nomPrenom: '',\n        pageBase64: null\n      }];\n    }\n  } catch (fetchError) {\n    pages = [{\n      pageIndex: 0,\n      texte: 'Extraction impossible — ' + fetchError.message,\n      nomPrenom: '',\n      pageBase64: null\n    }];\n  }\n}\n\nreturn [{ json: { pages, totalPages: pages.length, fileId, gasUrl, periode } }];\n"
       },
-      "id": "extraire-texte-pdf",
+      "id": "48ee4dcd-d9eb-4fe0-8447-470f061e0a58",
       "name": "Extraire le texte du PDF",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1080,
-        300
-      ],
+      "position": [2592, 1056],
       "onError": "continueErrorOutput",
-      "notes": "Extrait le texte page par page via pdfjs-dist.\nReconstruction des lignes via coordonnées Y (fiable sur tous PDF).\n3 patterns regex: MAJUSCULE Prénom, Prénom MAJUSCULE, label Nom:\nDécoupe chaque page avec pdf-lib (pageBase64). Fallback PDF complet si absent."
+      "notes": "Extrait le texte page par page via pdfjs-dist.\nReconstruction des lignes via coordonnées Y (fiable sur tous PDF).\n3 patterns regex: MAJUSCULE Prénom, Prénom MAJUSCULE, label Nom:\nDécoupe chaque page avec pdf-lib (pageBase64). Fallback GAS si pdfjs absent.\npdfjs-dist v4+ ESM → await import() au lieu de require()."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur extraction PDF : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur extraction PDF : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-extraction",
+      "id": "270d5d50-6e0d-4133-afda-c66e817bedd0",
       "name": "Réponse Erreur Extraction",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        1300,
-        480
-      ],
+      "position": [2816, 1248],
       "notes": "Retourne l'erreur d'extraction PDF à l'UI."
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{ $json.gasUrl }}",
         "sendQuery": true,
         "queryParameters": {
@@ -204,75 +179,63 @@
           "timeout": 30000
         }
       },
-      "id": "gas-lister-salaries",
+      "id": "2102e2e7-4037-4610-96c8-d7655b8fdc03",
       "name": "GAS — Charger liste salariés",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        1300,
-        300
-      ],
+      "position": [2816, 1056],
       "onError": "continueErrorOutput",
       "notes": "Charge la liste complète des salariés actifs depuis Google Sheets."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur chargement salariés : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur chargement salariés : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-salaries",
+      "id": "9795085b-7f94-4ee3-9588-b3639b8cfd14",
       "name": "Réponse Erreur Salariés",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        1520,
-        480
-      ],
+      "position": [3040, 1248],
       "notes": "Retourne l'erreur de chargement salariés à l'UI."
     },
     {
       "parameters": {
         "jsCode": "// Faire correspondre chaque page avec un salarié\nconst extraitData = $(\"Extraire le texte du PDF\").item.json;\nconst pages = extraitData.pages;\nconst fileId = extraitData.fileId;\nconst periode = extraitData.periode;\n\n// La réponse GAS peut être un tableau direct ou encapsulée\nconst gasReponse = $input.first().json;\nlet salaries = [];\nif (Array.isArray(gasReponse)) {\n  salaries = gasReponse;\n} else if (Array.isArray(gasReponse.salaries)) {\n  salaries = gasReponse.salaries;\n} else if (Array.isArray(gasReponse.data)) {\n  salaries = gasReponse.data;\n}\n\n// Normaliser une chaîne pour comparaison insensible aux accents/casse\nfunction normaliser(str) {\n  if (!str) return '';\n  return str\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .toUpperCase()\n    .replace(/[^A-Z0-9_]/g, '');\n}\n\n// Construire un index normalisé des salariés pour le matching rapide\nconst indexSalaries = {};\nfor (const s of salaries) {\n  if (s.nomPrenom) {\n    indexSalaries[normaliser(s.nomPrenom)] = s;\n  }\n}\n\nconst resultatsMatching = [];\nconst nonTrouves = [];\nconst emailsManquants = [];\n\nfor (const page of pages) {\n  const nomPrenomBrut = page.nomPrenom || '';\n  const nomPrenomNorm = normaliser(nomPrenomBrut);\n\n  // Chercher d'abord par correspondance exacte normalisée\n  let salarie = indexSalaries[nomPrenomNorm] || null;\n\n  // Si pas trouvé, essayer une correspondance partielle (préfixe NOM)\n  if (!salarie && nomPrenomNorm.length > 2) {\n    const nomSeul = nomPrenomNorm.split('_')[0];\n    if (nomSeul) {\n      for (const [key, val] of Object.entries(indexSalaries)) {\n        if (key.startsWith(nomSeul + '_') || key === nomSeul) {\n          salarie = val;\n          break;\n        }\n      }\n    }\n  }\n\n  if (!salarie) {\n    nonTrouves.push(nomPrenomBrut || 'Page ' + page.pageIndex);\n    resultatsMatching.push({\n      ...page,\n      statut: 'NON_TROUVE',\n      email: null,\n      inclure: false\n    });\n  } else if (!salarie.email) {\n    emailsManquants.push(salarie.nomPrenom);\n    resultatsMatching.push({\n      ...page,\n      nomPrenom: salarie.nomPrenom,\n      statut: 'EMAIL_MANQUANT',\n      email: null,\n      idDossierDrive: salarie.idDossierDrive,\n      inclure: true\n    });\n  } else {\n    resultatsMatching.push({\n      ...page,\n      nomPrenom: salarie.nomPrenom,\n      statut: 'OK',\n      email: salarie.email,\n      idDossierDrive: salarie.idDossierDrive,\n      inclure: true\n    });\n  }\n}\n\nreturn [{\n  json: {\n    mapping: resultatsMatching,\n    nonTrouves,\n    emailsManquants,\n    nbTotal: resultatsMatching.length,\n    nbOk: resultatsMatching.filter(m => m.statut === 'OK').length,\n    nbProblemes: nonTrouves.length + emailsManquants.length,\n    fileId,\n    periode\n  }\n}];\n"
       },
-      "id": "faire-matching",
+      "id": "7bdabc2b-5991-49fb-9b69-f6648d376723",
       "name": "Faire le matching NOM_Prenom → Salarié",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1520,
-        300
-      ],
+      "position": [3040, 1056],
       "onError": "continueErrorOutput",
       "notes": "Associe chaque page PDF à un salarié de la base.\nMatching normalisé: insensible aux accents et à la casse.\nFallback: correspondance partielle sur le NOM seul.\nGère: NON_TROUVE, EMAIL_MANQUANT, OK."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur matching : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur matching : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-matching",
+      "id": "d9a4d9c5-b263-48ad-841b-74b2372d97c2",
       "name": "Réponse Erreur Matching",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        1740,
-        480
-      ],
+      "position": [3264, 1248],
       "notes": "Retourne l'erreur de matching à l'UI."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, etape: 'MATCHING_TERMINE', mapping: $json.mapping, nonTrouves: $json.nonTrouves, emailsManquants: $json.emailsManquants, nbTotal: $json.nbTotal, nbOk: $json.nbOk, nbProblemes: $json.nbProblemes, fileId: $json.fileId, periode: $json.periode, awaitConfirmation: true }) }}"
+        "responseBody": "={{ JSON.stringify({ success: true, etape: 'MATCHING_TERMINE', mapping: $json.mapping, nonTrouves: $json.nonTrouves, emailsManquants: $json.emailsManquants, nbTotal: $json.nbTotal, nbOk: $json.nbOk, nbProblemes: $json.nbProblemes, fileId: $json.fileId, periode: $json.periode, awaitConfirmation: true }) }}",
+        "options": {}
       },
-      "id": "reponse-recap-ui",
+      "id": "921bbd22-93fd-4d4b-95a7-41b39d71f90f",
       "name": "Réponse récapitulatif à l'UI",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        1740,
-        300
-      ],
+      "position": [3264, 1056],
       "notes": "Envoie le récapitulatif complet à l'UI.\nawaitConfirmation: true → l'UI affiche la modale de confirmation avant envoi."
     },
     {
@@ -284,14 +247,11 @@
           "allowedOrigins": "*"
         }
       },
-      "id": "webhook-confirmation",
+      "id": "9af6838e-8f0f-43d6-bfe5-25188a8d37ad",
       "name": "Webhook — Confirmation Envoi",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        200,
-        700
-      ],
+      "position": [1712, 1456],
       "webhookId": "paie-confirmer-webhook",
       "notes": "Déclenché après confirmation humaine sur l'UI.\nPayload: { fileId, mapping, periode, gasUrl }"
     },
@@ -300,15 +260,6 @@
         "method": "POST",
         "url": "={{ $json.body.gasUrl }}",
         "sendBody": true,
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          },
-          "timeout": 120000
-        },
-        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
@@ -328,47 +279,48 @@
               "value": "={{ $json.body.periode }}"
             }
           ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 120000
         }
       },
-      "id": "gas-traiter-confirme",
+      "id": "6e9e6a8d-0c6e-4e90-afba-cc18c0726994",
       "name": "GAS — Traitement final (découpage + stockage + emails)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        420,
-        700
-      ],
+      "position": [1936, 1456],
       "onError": "continueErrorOutput",
       "notes": "Appelle Google Apps Script pour:\n- Découper le PDF (étape 6)\n- Stocker les fiches individuelles (étape 7)\n- Envoyer les emails (étape 8)\n- Envoyer l'email de synthèse admin"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur traitement final : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur traitement final : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}",
+        "options": {}
       },
-      "id": "reponse-erreur-finale",
+      "id": "090f2a8c-a9b7-4fe7-b41c-2b9489d83bd5",
       "name": "Réponse Erreur Finale",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        640,
-        880
-      ],
+      "position": [2160, 1648],
       "notes": "Retourne l'erreur du traitement final à l'UI."
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($input.first().json) }}"
+        "responseBody": "={{ JSON.stringify($input.first().json) }}",
+        "options": {}
       },
-      "id": "reponse-finale",
+      "id": "1d7b86c8-6a12-439b-9c50-4ae0a4911e25",
       "name": "Réponse finale à l'UI",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        640,
-        700
-      ],
+      "position": [2160, 1456],
       "notes": "Retourne le résultat complet du traitement à l'UI pour affichage du résumé final."
     }
   ],
@@ -522,23 +474,8 @@
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": ""
-  },
-  "staticData": {},
-  "meta": {
-    "instanceId": "gestionnaire-paie-suisse"
-  },
   "pinData": {},
-  "versionId": "1.5.1",
-  "triggerCount": 2,
-  "tags": [
-    "paie",
-    "RH",
-    "suisse",
-    "CHF"
-  ]
+  "meta": {
+    "instanceId": "6d0e2ce111adb4d440a63ba6c181d30e6da34c7023061c30b6db878f70e04a4c"
+  }
 }
