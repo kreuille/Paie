@@ -1052,16 +1052,90 @@ function doPost(e) {
 }
 
 /**
+ * Découpe un PDF en pages individuelles via conversion Drive PDF→Slides.
+ * Retourne un objet { pageIndex: base64PDF }.
+ * Chaque slide de la présentation correspond à une page du PDF.
+ */
+function splitPDFEnPagesViaSlides(fileId) {
+  const token = ScriptApp.getOAuthToken();
+  const headers = { Authorization: 'Bearer ' + token };
+  const base = 'https://www.googleapis.com/drive/v3/files/';
+
+  // Convertir PDF → Google Slides (Drive crée 1 slide par page PDF)
+  const copyResp = UrlFetchApp.fetch(base + fileId + '/copy', {
+    method: 'POST',
+    contentType: 'application/json',
+    headers: headers,
+    payload: JSON.stringify({
+      name: '_tmp_slides_' + fileId,
+      mimeType: 'application/vnd.google-apps.presentation'
+    }),
+    muteHttpExceptions: true
+  });
+  const presResult = JSON.parse(copyResp.getContentText());
+  if (!presResult.id) {
+    throw new Error('PDF→Slides échoué (' + copyResp.getResponseCode() + '): ' +
+      copyResp.getContentText().substring(0, 200));
+  }
+  const presId = presResult.id;
+
+  const pageMap = {};
+  try {
+    const pres = SlidesApp.openById(presId);
+    const slides = pres.getSlides();
+    Logger.log('splitPDFEnPagesViaSlides — ' + slides.length + ' slide(s) détecté(s)');
+
+    for (let i = 0; i < slides.length; i++) {
+      // Créer une présentation temporaire avec ce seul slide
+      const tempPres = SlidesApp.create('_tmp_p' + i + '_' + fileId);
+      try {
+        // Supprimer le slide vide créé par défaut
+        const defSlides = tempPres.getSlides();
+        if (defSlides.length > 0) defSlides[0].remove();
+        // Copier le slide depuis la présentation source
+        tempPres.appendSlide(slides[i]);
+        // Exporter le slide unique en PDF
+        const pdfBytes = DriveApp.getFileById(tempPres.getId())
+          .getAs(MimeType.PDF).getBytes();
+        pageMap[i] = Utilities.base64Encode(pdfBytes);
+      } finally {
+        DriveApp.getFileById(tempPres.getId()).setTrashed(true);
+      }
+    }
+  } finally {
+    DriveApp.getFileById(presId).setTrashed(true);
+  }
+
+  return pageMap;
+}
+
+/**
  * Traitement complet après confirmation humaine (étapes 6, 7, 8)
  */
 function traiterConfirmationEnvoi(fileId, mapping, periode) {
   const debut = new Date();
 
+  // Pré-découper le PDF en pages individuelles via Slides
+  let pageMap = {};
+  try {
+    pageMap = splitPDFEnPagesViaSlides(fileId);
+    Logger.log('traiterConfirmationEnvoi — PDF découpé en ' + Object.keys(pageMap).length + ' page(s)');
+  } catch (e) {
+    Logger.log('⚠️ Découpage PDF→Slides échoué (' + e.message + ') — fallback PDF complet');
+  }
+
+  // Enrichir chaque entrée du mapping avec sa page découpée
+  const mappingEnrichi = mapping.map(function(item) {
+    return Object.assign({}, item, {
+      pageBase64: item.pageBase64 || pageMap[item.pageIndex] || null
+    });
+  });
+
   // Étape 6 & 7 — Découper et stocker
-  const resultatsStockage = decouperEtStockerPDF(fileId, mapping, periode);
+  const resultatsStockage = decouperEtStockerPDF(fileId, mappingEnrichi, periode);
 
   // Étape 8 — Envoyer les emails
-  const resultatsEmail = envoyerFichesPaie(mapping, periode);
+  const resultatsEmail = envoyerFichesPaie(mappingEnrichi, periode);
 
   const fin = new Date();
   const dureeSecondes = Math.round((fin - debut) / 1000);
