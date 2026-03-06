@@ -827,8 +827,29 @@ function doGet(e) {
     case 'getLogs':
       result = getLogs(parseInt(e.parameter.limit) || 50);
       break;
+    case 'testAuth': {
+      // Diagnostic : version déployée, scopes token, test UrlFetchApp
+      const token = ScriptApp.getOAuthToken();
+      let fetchTest = null;
+      try {
+        const r = UrlFetchApp.fetch(
+          'https://www.googleapis.com/drive/v3/about?fields=user',
+          { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true }
+        );
+        fetchTest = { status: r.getResponseCode(), body: r.getContentText().substring(0, 200) };
+      } catch (fe) {
+        fetchTest = { error: fe.message };
+      }
+      result = {
+        version: '2026-03-06-v3-files-copy',
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        fetchTest: fetchTest
+      };
+      break;
+    }
     default:
-      result = { error: 'Action inconnue', actionsDisponibles: ['listerSalaries', 'rechercherSalarie', 'getLogs'] };
+      result = { error: 'Action inconnue', actionsDisponibles: ['listerSalaries', 'rechercherSalarie', 'getLogs', 'testAuth'] };
   }
 
   return ContentService
