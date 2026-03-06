@@ -1115,13 +1115,18 @@ function splitPDFEnPagesViaSlides(fileId) {
 function traiterConfirmationEnvoi(fileId, mapping, periode) {
   const debut = new Date();
 
-  // Pré-découper le PDF en pages individuelles via Slides
+  // Pré-découper via Slides uniquement si le navigateur n'a pas déjà fourni pageBase64
+  const besoinSplit = mapping.some(function(item) { return !item.pageBase64; });
   let pageMap = {};
-  try {
-    pageMap = splitPDFEnPagesViaSlides(fileId);
-    Logger.log('traiterConfirmationEnvoi — PDF découpé en ' + Object.keys(pageMap).length + ' page(s)');
-  } catch (e) {
-    Logger.log('⚠️ Découpage PDF→Slides échoué (' + e.message + ') — fallback PDF complet');
+  if (besoinSplit) {
+    try {
+      pageMap = splitPDFEnPagesViaSlides(fileId);
+      Logger.log('traiterConfirmationEnvoi — PDF découpé en ' + Object.keys(pageMap).length + ' page(s) via Slides');
+    } catch (e) {
+      Logger.log('⚠️ Découpage PDF→Slides échoué (' + e.message + ') — fallback PDF complet');
+    }
+  } else {
+    Logger.log('traiterConfirmationEnvoi — pageBase64 fourni par le navigateur, split Slides ignoré');
   }
 
   // Enrichir chaque entrée du mapping avec sa page découpée

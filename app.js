@@ -329,11 +329,15 @@ async function lancerTraitement() {
   await executerEtape(1, 'Upload vers Google Drive...', async () => {
     const base64 = await lireEnBase64(STATE.fichierPDF);
 
+    // Découper le PDF en pages individuelles côté navigateur (pdf-lib)
+    const pagesBase64 = await splitPDFEnPages(STATE.fichierPDF);
+
     if (utiliserN8n) {
       const reponse = await apiN8n('paie-upload', {
         fileData: base64,
         fileName: STATE.fichierPDF.name,
         periode: STATE.periode,
+        pagesBase64,
       });
 
       if (!reponse.success && reponse.alert === 'PDF_CORROMPU') {
@@ -835,6 +839,39 @@ function lireEnBase64(fichier) {
     reader.onerror = reject;
     reader.readAsDataURL(fichier);
   });
+}
+
+/**
+ * Découpe un PDF en pages individuelles côté navigateur via pdf-lib.
+ * Retourne un tableau [base64Page0, base64Page1, ...].
+ * Retourne [] si pdf-lib n'est pas disponible ou en cas d'erreur.
+ */
+async function splitPDFEnPages(fichier) {
+  if (typeof PDFLib === 'undefined') {
+    console.warn('splitPDFEnPages: pdf-lib non disponible, découpage ignoré');
+    return [];
+  }
+  try {
+    const arrayBuffer = await fichier.arrayBuffer();
+    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+    const pageCount = pdfDoc.getPageCount();
+    const result = [];
+    for (let i = 0; i < pageCount; i++) {
+      const pageDoc = await PDFLib.PDFDocument.create();
+      const [copiedPage] = await pageDoc.copyPagesFrom(pdfDoc, [i]);
+      pageDoc.addPage(copiedPage);
+      const bytes = await pageDoc.save();
+      // Convertir Uint8Array en base64
+      let binary = '';
+      for (let j = 0; j < bytes.byteLength; j++) binary += String.fromCharCode(bytes[j]);
+      result.push(btoa(binary));
+    }
+    console.log('splitPDFEnPages:', pageCount, 'page(s) découpée(s)');
+    return result;
+  } catch (e) {
+    console.warn('splitPDFEnPages erreur:', e.message);
+    return [];
+  }
 }
 
 // ============================================================
