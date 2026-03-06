@@ -39,7 +39,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Validation échouée : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Validation échouée : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
       },
       "id": "reponse-erreur-validation",
       "name": "Réponse Erreur Validation",
@@ -117,7 +117,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur stockage Drive : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, debug: $json, error: \"Erreur stockage Drive : \" + ($json.error?.message || $json.error || $json.message || JSON.stringify($json).substring(0, 300)) }) }}"
       },
       "id": "reponse-erreur-drive",
       "name": "Réponse Erreur Drive",
@@ -147,7 +147,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur extraction PDF : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur extraction PDF : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
       },
       "id": "reponse-erreur-extraction",
       "name": "Réponse Erreur Extraction",
@@ -199,7 +199,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur chargement salariés : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur chargement salariés : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
       },
       "id": "reponse-erreur-salaries",
       "name": "Réponse Erreur Salariés",
@@ -229,7 +229,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur matching : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur matching : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
       },
       "id": "reponse-erreur-matching",
       "name": "Réponse Erreur Matching",
@@ -306,7 +306,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur traitement final : ' + $json.error.message }) }}"
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Erreur traitement final : ' + ($json.error?.message || $json.error || 'Erreur inconnue') }) }}"
       },
       "id": "reponse-erreur-finale",
       "name": "Réponse Erreur Finale",
