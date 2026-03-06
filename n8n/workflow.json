@@ -321,7 +321,7 @@
             },
             {
               "name": "mapping",
-              "value": "={{ JSON.stringify($json.body.mapping.filter(m => m.inclure !== false)) }}"
+              "value": "={{ $json.body.mapping.filter(m => m.inclure !== false) }}"
             },
             {
               "name": "periode",
@@ -533,7 +533,7 @@
     "instanceId": "gestionnaire-paie-suisse"
   },
   "pinData": {},
-  "versionId": "1.5.0",
+  "versionId": "1.5.1",
   "triggerCount": 2,
   "tags": [
     "paie",

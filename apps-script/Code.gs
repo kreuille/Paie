@@ -839,10 +839,12 @@ function doPost(e) {
     case 'uploadPDF':
       result = traiterUploadPDF(data.fileData, data.fileName, data.periode);
       break;
-    case 'confirmerEnvoi':
+    case 'confirmerEnvoi': {
       // Après approbation humaine sur l'UI — découpage + stockage + envoi
-      result = traiterConfirmationEnvoi(data.fileId, data.mapping, data.periode);
+      const mapping = typeof data.mapping === 'string' ? JSON.parse(data.mapping) : data.mapping;
+      result = traiterConfirmationEnvoi(data.fileId, mapping, data.periode);
       break;
+    }
     default:
       result = { success: false, error: 'Action inconnue' };
   }
