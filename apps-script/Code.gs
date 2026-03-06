@@ -851,37 +851,14 @@ function extrairePDF(fileId) {
     const file = DriveApp.getFileById(fileId);
     const blob = file.getBlob().setContentType('application/pdf');
 
-    // Convertir le PDF en Google Doc via UrlFetchApp (sans service avancé Drive)
-    const token = ScriptApp.getOAuthToken();
-    const pdfBytes = blob.getBytes();
-    const boundary = 'boundary_paie_' + fileId;
-    const metadataStr = JSON.stringify({
-      title: 'tmp_paie_extract_' + fileId,
-      mimeType: 'application/vnd.google-apps.document'
-    });
-    const bodyParts = [
-      '--' + boundary + '\r\n',
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n',
-      metadataStr + '\r\n',
-      '--' + boundary + '\r\n',
-      'Content-Type: application/pdf\r\n',
-      'Content-Transfer-Encoding: base64\r\n\r\n',
-      Utilities.base64Encode(pdfBytes) + '\r\n',
-      '--' + boundary + '--'
-    ];
-    const uploadResp = UrlFetchApp.fetch(
-      'https://www.googleapis.com/upload/drive/v2/files?uploadType=multipart&convert=true',
-      {
-        method: 'POST',
-        contentType: 'multipart/related; boundary=' + boundary,
-        payload: bodyParts.join(''),
-        headers: { Authorization: 'Bearer ' + token },
-        muteHttpExceptions: true
-      }
+    // Convertir le PDF en Google Doc via le service avancé Drive (gère l'auth automatiquement)
+    const converted = Drive.Files.insert(
+      { title: 'tmp_paie_extract_' + fileId, mimeType: 'application/vnd.google-apps.document' },
+      blob,
+      { convert: true }
     );
-    const converted = JSON.parse(uploadResp.getContentText());
     if (!converted.id) {
-      throw new Error('Conversion PDF→Doc échouée: ' + uploadResp.getContentText().substring(0, 300));
+      throw new Error('Conversion PDF→Doc échouée : Drive.Files.insert a retourné sans ID');
     }
 
     // Lire le texte brut (les sauts de page Google Doc sont \f)
