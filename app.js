@@ -24,6 +24,7 @@ const STATE = {
   fileId: null,
   periode: '',
   mappingPages: [],
+  pagesBase64: [],        // Pages PDF individuelles découpées par pdf-lib
   indexMismatch: 0,
   mismatches: [],
   pendingAction: null,
@@ -330,14 +331,17 @@ async function lancerTraitement() {
     const base64 = await lireEnBase64(STATE.fichierPDF);
 
     // Découper le PDF en pages individuelles côté navigateur (pdf-lib)
-    const pagesBase64 = await splitPDFEnPages(STATE.fichierPDF);
+    STATE.pagesBase64 = await splitPDFEnPages(STATE.fichierPDF);
+    if (STATE.pagesBase64.length === 0) {
+      toast('⚠️ pdf-lib indisponible : les pages ne seront pas individualisées automatiquement.', 'warning');
+    }
 
     if (utiliserN8n) {
       const reponse = await apiN8n('paie-upload', {
         fileData: base64,
         fileName: STATE.fichierPDF.name,
         periode: STATE.periode,
-        pagesBase64,
+        pagesBase64: STATE.pagesBase64,
       });
 
       if (!reponse.success && reponse.alert === 'PDF_CORROMPU') {
@@ -348,8 +352,12 @@ async function lancerTraitement() {
       }
 
       STATE.fileId = reponse.fileId;
-      // n8n renvoie déjà le mapping extrait et matché
-      STATE.mappingPages = reponse.mapping || [];
+      // n8n renvoie le mapping extrait et matché
+      // On enrichit avec les pages découpées localement (source de vérité)
+      STATE.mappingPages = (reponse.mapping || []).map(m => ({
+        ...m,
+        pageBase64: STATE.pagesBase64[m.pageIndex] || m.pageBase64 || null,
+      }));
       return { pages: STATE.mappingPages.length };
     } else {
       const reponse = await apiPost({
@@ -396,21 +404,14 @@ async function lancerTraitement() {
   await executerEtape(6, 'Découpage et stockage des fiches...', async () => {
     const mappingFiltré = STATE.mappingPages.filter(m => m.inclure !== false);
 
-    let reponse;
-    if (utiliserN8n) {
-      reponse = await apiN8n('paie-confirmer', {
-        fileId: STATE.fileId,
-        mapping: mappingFiltré,
-        periode: STATE.periode,
-      });
-    } else {
-      reponse = await apiPost({
-        action: 'confirmerEnvoi',
-        fileId: STATE.fileId,
-        mapping: mappingFiltré,
-        periode: STATE.periode,
-      });
-    }
+    // Toujours appel GAS direct en JSON : les pageBase64 (200KB+/page)
+    // ne survivent pas à la sérialisation form-encoded de n8n bodyParameters
+    const reponse = await apiPost({
+      action: 'confirmerEnvoi',
+      fileId: STATE.fileId,
+      mapping: mappingFiltré,
+      periode: STATE.periode,
+    });
 
     if (!reponse.success) throw new Error(reponse.error || 'Erreur traitement');
     return reponse;
@@ -647,6 +648,7 @@ function reinitialiserUpload() {
   STATE.fichierPDF = null;
   STATE.fileId = null;
   STATE.mappingPages = [];
+  STATE.pagesBase64 = [];
   STATE.pendingAction = null;
 
   document.getElementById('fileInput').value = '';
