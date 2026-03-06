@@ -397,11 +397,24 @@ function traiterUploadPDF(fileData, fileName, periode) {
     loggerAction('UPLOAD_PDF', nomFichierStocke, '', '✅ Reçu',
       `Fichier stocké dans Upload PDF. ID Drive: ${fichierDrive.getId()}`);
 
+    // Extraire les pages directement (évite un aller-retour HTTP depuis n8n)
+    const extraction = extrairePDF(fichierDrive.getId());
+    const pages = (extraction.success && Array.isArray(extraction.pages) && extraction.pages.length > 0)
+      ? extraction.pages
+      : [];
+
+    if (pages.length === 0) {
+      loggerAction('UPLOAD_PDF', nomFichierStocke, '', '⚠️ Extraction vide',
+        'extrairePDF a retourné 0 page. Erreur : ' + (extraction.error || 'aucune'));
+    }
+
     return {
       success: true,
       fileId: fichierDrive.getId(),
       fileName: nomFichierStocke,
-      message: 'PDF reçu et stocké. Validation en cours...',
+      pages: pages,
+      totalPages: pages.length,
+      message: 'PDF reçu, stocké et analysé.',
       etape: 1
     };
 
