@@ -100,8 +100,27 @@
           },
           "timeout": 60000
         },
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ action: 'uploadPDF', fileData: $json.fileData, fileName: $json.fileName, periode: $json.periode }) }}"
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "uploadPDF"
+            },
+            {
+              "name": "fileData",
+              "value": "={{ $json.fileData }}"
+            },
+            {
+              "name": "fileName",
+              "value": "={{ $json.fileName }}"
+            },
+            {
+              "name": "periode",
+              "value": "={{ $json.periode }}"
+            }
+          ]
+        }
       },
       "id": "gas-stocker-pdf",
       "name": "GAS — Stocker PDF dans Drive",
@@ -289,8 +308,27 @@
           },
           "timeout": 120000
         },
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ action: 'confirmerEnvoi', fileId: $json.body.fileId, mapping: $json.body.mapping.filter(m => m.inclure !== false), periode: $json.body.periode }) }}"
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "confirmerEnvoi"
+            },
+            {
+              "name": "fileId",
+              "value": "={{ $json.body.fileId }}"
+            },
+            {
+              "name": "mapping",
+              "value": "={{ JSON.stringify($json.body.mapping.filter(m => m.inclure !== false)) }}"
+            },
+            {
+              "name": "periode",
+              "value": "={{ $json.body.periode }}"
+            }
+          ]
+        }
       },
       "id": "gas-traiter-confirme",
       "name": "GAS — Traitement final (découpage + stockage + emails)",
@@ -495,7 +533,7 @@
     "instanceId": "gestionnaire-paie-suisse"
   },
   "pinData": {},
-  "versionId": "1.4.0",
+  "versionId": "1.5.0",
   "triggerCount": 2,
   "tags": [
     "paie",
