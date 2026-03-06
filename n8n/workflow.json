@@ -93,7 +93,7 @@
         "url": "={{ $json.gasUrl }}",
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify({ action: 'uploadPDF', fileData: $json.fileData, fileName: $json.fileName, periode: $json.periode }) }}",
+        "body": "={{ { action: 'uploadPDF', fileData: $json.fileData, fileName: $json.fileName, periode: $json.periode } }}",
         "options": {
           "response": {
             "response": {
@@ -282,7 +282,7 @@
         "url": "={{ $json.body.gasUrl }}",
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify({ action: 'confirmerEnvoi', fileId: $json.body.fileId, mapping: $json.body.mapping.filter(m => m.inclure !== false), periode: $json.body.periode }) }}",
+        "body": "={{ { action: 'confirmerEnvoi', fileId: $json.body.fileId, mapping: $json.body.mapping.filter(m => m.inclure !== false), periode: $json.body.periode } }}",
         "options": {
           "response": {
             "response": {
@@ -495,7 +495,7 @@
     "instanceId": "gestionnaire-paie-suisse"
   },
   "pinData": {},
-  "versionId": "1.2.0",
+  "versionId": "1.3.0",
   "triggerCount": 2,
   "tags": [
     "paie",
