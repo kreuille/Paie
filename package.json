@@ -1,0 +1,23 @@
+{
+  "name": "paie",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:34016/git/kreuille/Paie"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5"
+  }
+}
