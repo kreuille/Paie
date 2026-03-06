@@ -821,6 +821,86 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ============================================================
+// EXTRACTION PDF — Lecture texte via conversion Drive→Google Doc
+// ============================================================
+
+/**
+ * Extrait le texte du PDF stocké dans Drive et identifie les noms NOM_Prenom
+ * par page (en utilisant la conversion PDF→Google Doc native de Drive).
+ * @param {string} fileId - ID Drive du fichier PDF
+ * @returns {{ success: boolean, pages: Array, totalPages: number }}
+ */
+function extrairePDF(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob().setContentType('application/pdf');
+
+    // Convertir le PDF en Google Doc (extraction texte native Drive)
+    const resource = {
+      title: 'tmp_paie_extract_' + fileId,
+      mimeType: 'application/vnd.google-apps.document'
+    };
+    const converted = Drive.Files.insert(resource, blob, { convert: true });
+
+    // Lire le texte brut
+    const doc = DocumentApp.openById(converted.id);
+    const fullText = doc.getBody().getText();
+
+    // Supprimer le document temporaire
+    DriveApp.getFileById(converted.id).setTrashed(true);
+
+    // Découper par page : chaque fiche commence par "FICHE DE PAIE"
+    const rawSections = fullText.split(/FICHE\s+DE\s+PAIE/i).filter(s => s.trim().length > 0);
+
+    const pages = rawSections.map(function(section, idx) {
+      const lignes = section.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+      const nomPrenom = extraireNomPrenomTexte(lignes);
+      return {
+        pageIndex: idx,
+        texte: lignes.slice(0, 5).join(' | '),
+        nomPrenom: nomPrenom,
+        pageBase64: null
+      };
+    });
+
+    Logger.log('extrairePDF : ' + pages.length + ' fiche(s) détectée(s) — ' + pages.map(function(p){ return p.nomPrenom; }).join(', '));
+
+    return { success: true, pages: pages, totalPages: pages.length };
+
+  } catch (error) {
+    Logger.log('extrairePDF erreur : ' + error.message);
+    return { success: false, error: error.message, pages: [], totalPages: 0 };
+  }
+}
+
+/**
+ * Identifie NOM_Prenom depuis un tableau de lignes texte.
+ * Supporte : "DUPONT Jean", "Jean DUPONT"
+ */
+function extraireNomPrenomTexte(lignes) {
+  var accentClasses = 'ÀÂÄÉÈÊËÏÎÙÛÜÇ';
+  for (var i = 0; i < Math.min(lignes.length, 20); i++) {
+    var ligne = lignes[i];
+
+    // Pattern 1 : NOM Prénom — ex: "DUPONT Jean" ou "MARTIN Sophie"
+    var m1 = ligne.match(/^([A-Z\u00C0-\u00DC][A-Z\u00C0-\u00DC\-\']{1,})\s+([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})$/);
+    if (m1) return m1[1].trim() + '_' + m1[2].trim();
+
+    // Pattern 2 : Prénom NOM — ex: "Jean DUPONT"
+    var m2 = ligne.match(/^([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})\s+([A-Z\u00C0-\u00DC]{2,})$/);
+    if (m2) return m2[2] + '_' + m2[1];
+
+    // Pattern 3 : label Nom/Employé/Salarié
+    var m3 = ligne.match(/(?:Nom|Employ[eé]|Collaborateur|Salari[eé])\s*[:\-]\s*([A-Z\u00C0-\u00DC][a-zA-Z\u00C0-\u00FC\s\-\']{2,})/i);
+    if (m3) {
+      var parts = m3[1].trim().split(/\s+/);
+      if (parts.length >= 2) return parts[0].toUpperCase() + '_' + parts[1];
+    }
+  }
+  return '';
+}
+
 /**
  * Point d'entrée POST — Actions CRUD et upload
  */
@@ -848,6 +928,9 @@ function doPost(e) {
       break;
     case 'uploadPDF':
       result = traiterUploadPDF(data.fileData, data.fileName, data.periode);
+      break;
+    case 'extrairePDF':
+      result = extrairePDF(data.fileId);
       break;
     case 'confirmerEnvoi': {
       // Après approbation humaine sur l'UI — découpage + stockage + envoi
