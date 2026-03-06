@@ -15,7 +15,7 @@ const CONFIG = {
   DRIVE_SALARIES_FOLDER_NAME: 'Salariés',
   DRIVE_UPLOAD_FOLDER_NAME: 'Upload PDF',
   DRIVE_ERRORS_FOLDER_NAME: 'Erreurs',
-  ADMIN_EMAIL: 'admin@votre-entreprise.ch', // ← Modifier avec l'email admin RH
+  ADMIN_EMAIL: 'arnaudguedou@gmail.com',
   MAX_RETRIES: 3,
   RETRY_DELAY_MS: 10000, // 10 secondes
   SHEET_SALARIES: 'Salariés',
@@ -457,10 +457,9 @@ function decouperEtStockerPDF(fileId, mapping, periode) {
         // Vérifier les doublons et renommer si nécessaire
         const nomFinal = gererDoublon(dossierSalarie, nomFichierIndividuel);
 
-        // Note: Le découpage réel du PDF nécessite une API externe (Cloud Function)
-        // car Apps Script ne peut pas découper des PDF nativement.
-        // Ici on copie la page via l'ID page stocké par le workflow n8n.
-        const blobPage = obtenirPagePDF(fileId, item.pageIndex);
+        // Si n8n a découpé la page (pdf-lib disponible), pageBase64 est fourni.
+        // Sinon on retourne le PDF complet en fallback.
+        const blobPage = obtenirPagePDF(fileId, item.pageIndex, item.pageBase64 || null);
         const fichierCree = dossierSalarie.createFile(blobPage.setName(nomFinal));
 
         loggerAction('STOCKAGE_FICHE', nomFinal, item.nomPrenom, '✅ Stocké',
@@ -502,12 +501,23 @@ function decouperEtStockerPDF(fileId, mapping, periode) {
 }
 
 /**
- * Obtenir une page spécifique d'un PDF (proxy vers le service de découpage)
- * En production, ceci appelle un service externe ou utilise le blob stocké par n8n
+ * Obtenir une page spécifique d'un PDF
+ * Si pageBase64 est fourni (découpé par n8n via pdf-lib), on l'utilise directement.
+ * Sinon, on retourne le PDF complet en fallback.
+ *
+ * @param {string} fileId    - ID Drive du PDF global
+ * @param {number} pageIndex - Index de la page (0-based)
+ * @param {string|null} pageBase64 - Page individuelle en base64, découpée par n8n
  */
-function obtenirPagePDF(fileId, pageIndex) {
-  // En production : appel à Cloud Function ou service de découpage PDF
-  // Pour la démo, on retourne le fichier complet (à remplacer par le vrai découpage)
+function obtenirPagePDF(fileId, pageIndex, pageBase64) {
+  if (pageBase64) {
+    return Utilities.newBlob(
+      Utilities.base64Decode(pageBase64),
+      'application/pdf',
+      'page_' + pageIndex + '.pdf'
+    );
+  }
+  // Fallback : PDF complet (quand pdf-lib indisponible dans n8n)
   const fichier = DriveApp.getFileById(fileId);
   return fichier.getBlob();
 }
