@@ -481,13 +481,15 @@ function decouperEtStockerPDF(fileId, mapping, periode) {
         const nomFichierIndividuel = `${item.nomPrenom}_Fiche_Paie_${periode}.pdf`;
         const dossierSalarie = DriveApp.getFolderById(salarie.idDossierDrive);
 
-        // Vérifier les doublons et renommer si nécessaire
-        const nomFinal = gererDoublon(dossierSalarie, nomFichierIndividuel);
+        // Supprimer toute version précédente (évite que gererDoublon renomme
+        // en _v2 et que obtenirFichierPourEmail retrouve l'ancienne)
+        const existants = dossierSalarie.getFilesByName(nomFichierIndividuel);
+        while (existants.hasNext()) {
+          existants.next().setTrashed(true);
+        }
 
-        // Si n8n a découpé la page (pdf-lib disponible), pageBase64 est fourni.
-        // Sinon on retourne le PDF complet en fallback.
         const blobPage = obtenirPagePDF(fileId, item.pageIndex, item.pageBase64 || null);
-        const fichierCree = dossierSalarie.createFile(blobPage.setName(nomFinal));
+        const fichierCree = dossierSalarie.createFile(blobPage.setName(nomFichierIndividuel));
 
         loggerAction('STOCKAGE_FICHE', nomFinal, item.nomPrenom, '✅ Stocké',
           `Dossier: ${salarie.idDossierDrive}`);
