@@ -860,7 +860,7 @@ async function splitPDFEnPages(fichier) {
     const result = [];
     for (let i = 0; i < pageCount; i++) {
       const pageDoc = await PDFLib.PDFDocument.create();
-      const [copiedPage] = await pageDoc.copyPagesFrom(pdfDoc, [i]);
+      const [copiedPage] = await pageDoc.copyPages(pdfDoc, [i]);
       pageDoc.addPage(copiedPage);
       const bytes = await pageDoc.save();
       // Convertir Uint8Array en base64
