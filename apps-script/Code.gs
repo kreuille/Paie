@@ -491,12 +491,12 @@ function decouperEtStockerPDF(fileId, mapping, periode) {
         const blobPage = obtenirPagePDF(fileId, item.pageIndex, item.pageBase64 || null);
         const fichierCree = dossierSalarie.createFile(blobPage.setName(nomFichierIndividuel));
 
-        loggerAction('STOCKAGE_FICHE', nomFinal, item.nomPrenom, '✅ Stocké',
+        loggerAction('STOCKAGE_FICHE', nomFichierIndividuel, item.nomPrenom, '✅ Stocké',
           `Dossier: ${salarie.idDossierDrive}`);
 
         resultats.push({
           nomPrenom: item.nomPrenom,
-          fichier: nomFinal,
+          fichier: nomFichierIndividuel,
           fileId: fichierCree.getId(),
           success: true
         });
