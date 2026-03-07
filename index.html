@@ -3,166 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestionnaire de Feuilles de Paie — Suisse</title>
+  <title>Paie RH — Suisse CHF</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- ====== EN-TÊTE ====== -->
+  <!-- ═══ HEADER ═══ -->
   <header class="app-header">
-    <div class="header-content">
-      <div class="header-logo">
-        <span class="logo-icon">📋</span>
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+        </div>
         <div>
-          <h1>Gestionnaire de Feuilles de Paie</h1>
-          <p>Suisse · CHF · Interface RH</p>
+          <div class="brand-name">Gestion Paie</div>
+          <div class="brand-sub">Suisse · CHF</div>
         </div>
       </div>
-      <div class="header-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Connexion...</span>
+      <div class="header-right">
+        <div class="status-chip">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Connexion…</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- ====== NAVIGATION ====== -->
+  <!-- ═══ NAV ═══ -->
   <nav class="app-nav">
-    <button class="nav-btn active" data-tab="salaries" onclick="afficherOnglet('salaries')">
-      👥 Salariés
-    </button>
-    <button class="nav-btn" data-tab="upload" onclick="afficherOnglet('upload')">
-      📤 Upload Fiches
-    </button>
-    <button class="nav-btn" data-tab="logs" onclick="afficherOnglet('logs')">
-      📊 Journaux
-    </button>
+    <div class="nav-inner">
+      <button class="nav-btn active" data-tab="salaries" onclick="afficherOnglet('salaries')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+        </svg>
+        Salariés
+      </button>
+      <button class="nav-btn" data-tab="upload" onclick="afficherOnglet('upload')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+        </svg>
+        Upload Fiches
+      </button>
+      <button class="nav-btn" data-tab="logs" onclick="afficherOnglet('logs')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+          <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+        </svg>
+        Journaux
+      </button>
+    </div>
   </nav>
 
-  <!-- ====== CONTENU PRINCIPAL ====== -->
+  <!-- ═══ MAIN ═══ -->
   <main class="app-main">
 
-    <!-- ==================== ONGLET SALARIÉS ==================== -->
+    <!-- ─── SALARIÉS ──────────────────────────────────── -->
     <section id="tab-salaries" class="tab-content active">
-      <div class="section-header">
-        <h2>Gestion des Salariés</h2>
+
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Salariés</h2>
+          <p class="page-sub">Gérez votre base de données collaborateurs</p>
+        </div>
         <button class="btn btn-primary" onclick="ouvrirFormulaire('ajouter')">
-          ➕ Nouveau salarié
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+          Nouveau salarié
         </button>
       </div>
 
-      <!-- Barre de recherche -->
-      <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Rechercher par NOM_Prenom..."
-               oninput="filtrerSalaries(this.value)">
-        <button class="btn btn-secondary" onclick="chargerSalaries()">🔄 Actualiser</button>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-ico" viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+          </svg>
+          <input type="text" id="searchInput" class="search-input" placeholder="Rechercher NOM_Prenom…" oninput="filtrerSalaries(this.value)">
+        </div>
+        <button class="btn btn-ghost" onclick="chargerSalaries()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+          </svg>
+          Actualiser
+        </button>
       </div>
 
-      <!-- Tableau des salariés -->
-      <div class="table-wrapper">
+      <div class="card">
         <table class="data-table" id="tableSalaries">
           <thead>
             <tr>
               <th>ID</th>
-              <th>NOM_Prenom</th>
+              <th>NOM_Prénom</th>
               <th>Email</th>
               <th>Date d'entrée</th>
               <th>Statut</th>
-              <th>Actions</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="bodyTableSalaries">
-            <tr><td colspan="6" class="loading-cell">Chargement...</td></tr>
+            <tr><td colspan="6" class="loading-cell">Chargement…</td></tr>
           </tbody>
         </table>
       </div>
+
     </section>
 
-    <!-- ==================== ONGLET UPLOAD ==================== -->
+    <!-- ─── UPLOAD ────────────────────────────────────── -->
     <section id="tab-upload" class="tab-content">
-      <div class="section-header">
-        <h2>Upload des Fiches de Paie</h2>
+
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Upload Fiches de Paie</h2>
+          <p class="page-sub">Importez un PDF multi-pages pour traitement et envoi automatisé</p>
+        </div>
       </div>
 
-      <!-- Zone d'upload -->
-      <div class="upload-zone" id="uploadZone">
-        <div class="upload-icon">📄</div>
-        <h3>Glisser-déposer votre PDF ici</h3>
-        <p>ou</p>
-        <label class="btn btn-primary upload-label">
-          Sélectionner un fichier PDF
-          <input type="file" id="fileInput" accept=".pdf" onchange="gererSelectionFichier(this)">
-        </label>
-        <p class="upload-info">Format accepté : PDF uniquement — Toutes tailles</p>
+      <div class="upload-zone" id="uploadZone"
+           ondragover="event.preventDefault(); this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="event.preventDefault(); this.classList.remove('dragover'); if(event.dataTransfer.files[0]) gererSelectionFichier({files:[event.dataTransfer.files[0]]})">
+        <div class="upload-inner">
+          <div class="upload-icon">
+            <svg viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="52" height="52">
+              <rect x="6" y="6" width="32" height="40" rx="3" stroke-opacity=".3"/>
+              <path d="M20 6V4a2 2 0 012-2h14.172a2 2 0 011.414.586l5.828 5.828A2 2 0 0144 9.828V46a2 2 0 01-2 2H22a2 2 0 01-2-2v-2" stroke-opacity=".3"/>
+              <path d="M13 30V18M7 24l6-6 6 6"/>
+            </svg>
+          </div>
+          <p class="upload-heading">Glissez-déposez votre PDF ici</p>
+          <p class="upload-or">ou</p>
+          <label class="btn btn-outline upload-label">
+            Parcourir les fichiers
+            <input type="file" id="fileInput" accept=".pdf" onchange="gererSelectionFichier(this)">
+          </label>
+          <p class="upload-hint">Format PDF uniquement · Toutes tailles acceptées</p>
+        </div>
       </div>
 
-      <!-- Champ période -->
-      <div class="periode-field" id="periodeField" style="display:none;">
-        <label for="periodeInput">Période (MM-YYYY) :</label>
-        <input type="text" id="periodeInput" placeholder="03-2025"
-               pattern="[0-9]{2}-[0-9]{4}" maxlength="7">
-        <button class="btn btn-primary" onclick="lancerTraitement()">
-          🚀 Lancer le traitement
+      <div class="periode-bar" id="periodeField" style="display:none;">
+        <div class="periode-inner">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style="color:var(--muted);flex-shrink:0">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+          </svg>
+          <label for="periodeInput" class="periode-label">Période</label>
+          <input type="text" id="periodeInput" class="periode-input" placeholder="03-2025" pattern="[0-9]{2}-[0-9]{4}" maxlength="7">
+          <button class="btn btn-primary" onclick="lancerTraitement()">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+            </svg>
+            Lancer le traitement
+          </button>
+        </div>
+      </div>
+
+      <div class="card traitement-card" id="traitementPanel" style="display:none;">
+        <div class="traitement-top">
+          <div>
+            <h3 class="traitement-title">Traitement en cours</h3>
+            <p id="progressText" class="traitement-count">0 / 7 étapes</p>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="steps-list" id="etapesListe">
+          <div class="etape" id="etape1">
+            <div class="etape-bullet"><span class="etape-num">1</span></div>
+            <span class="etape-label">Réception et stockage Drive</span>
+            <span class="etape-statut" id="statut1"></span>
+          </div>
+          <div class="etape" id="etape2">
+            <div class="etape-bullet"><span class="etape-num">2</span></div>
+            <span class="etape-label">Validation du PDF</span>
+            <span class="etape-statut" id="statut2"></span>
+          </div>
+          <div class="etape" id="etape3">
+            <div class="etape-bullet"><span class="etape-num">3</span></div>
+            <span class="etape-label">Extraction et identification</span>
+            <span class="etape-statut" id="statut3"></span>
+          </div>
+          <div class="etape" id="etape4">
+            <div class="etape-bullet"><span class="etape-num">4</span></div>
+            <span class="etape-label">Matching avec la base salariés</span>
+            <span class="etape-statut" id="statut4"></span>
+          </div>
+          <div class="etape" id="etape5">
+            <div class="etape-bullet"><span class="etape-num">5</span></div>
+            <span class="etape-label">Confirmation avant envoi</span>
+            <span class="etape-statut" id="statut5"></span>
+          </div>
+          <div class="etape" id="etape6">
+            <div class="etape-bullet"><span class="etape-num">6</span></div>
+            <span class="etape-label">Découpage et stockage</span>
+            <span class="etape-statut" id="statut6"></span>
+          </div>
+          <div class="etape" id="etape7">
+            <div class="etape-bullet"><span class="etape-num">7</span></div>
+            <span class="etape-label">Envoi des emails</span>
+            <span class="etape-statut" id="statut7"></span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ─── JOURNAUX ──────────────────────────────────── -->
+    <section id="tab-logs" class="tab-content">
+
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Journaux d'activité</h2>
+          <p class="page-sub">Historique complet des opérations</p>
+        </div>
+        <button class="btn btn-ghost" onclick="chargerLogs()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+          </svg>
+          Actualiser
         </button>
       </div>
 
-      <!-- Progression du traitement -->
-      <div class="traitement-panel" id="traitementPanel" style="display:none;">
-
-        <!-- Étapes -->
-        <div class="etapes-liste" id="etapesListe">
-          <div class="etape" id="etape1">
-            <span class="etape-num">1</span>
-            <span class="etape-label">Réception et stockage Drive</span>
-            <span class="etape-statut" id="statut1">⏳</span>
-          </div>
-          <div class="etape" id="etape2">
-            <span class="etape-num">2</span>
-            <span class="etape-label">Validation du PDF</span>
-            <span class="etape-statut" id="statut2">⏳</span>
-          </div>
-          <div class="etape" id="etape3">
-            <span class="etape-num">3</span>
-            <span class="etape-label">Extraction et identification</span>
-            <span class="etape-statut" id="statut3">⏳</span>
-          </div>
-          <div class="etape" id="etape4">
-            <span class="etape-num">4</span>
-            <span class="etape-label">Matching avec la base salariés</span>
-            <span class="etape-statut" id="statut4">⏳</span>
-          </div>
-          <div class="etape" id="etape5">
-            <span class="etape-num">5</span>
-            <span class="etape-label">Confirmation avant envoi</span>
-            <span class="etape-statut" id="statut5">⏳</span>
-          </div>
-          <div class="etape" id="etape6">
-            <span class="etape-num">6</span>
-            <span class="etape-label">Découpage et stockage</span>
-            <span class="etape-statut" id="statut6">⏳</span>
-          </div>
-          <div class="etape" id="etape7">
-            <span class="etape-num">7</span>
-            <span class="etape-label">Envoi des emails</span>
-            <span class="etape-statut" id="statut7">⏳</span>
-          </div>
-        </div>
-
-        <!-- Barre de progression -->
-        <div class="progress-bar-wrapper">
-          <div class="progress-bar" id="progressBar" style="width:0%"></div>
-        </div>
-        <p class="progress-text" id="progressText">0 / 7 étapes</p>
-      </div>
-    </section>
-
-    <!-- ==================== ONGLET LOGS ==================== -->
-    <section id="tab-logs" class="tab-content">
-      <div class="section-header">
-        <h2>Journaux d'activité</h2>
-        <button class="btn btn-secondary" onclick="chargerLogs()">🔄 Actualiser</button>
-      </div>
-
-      <div class="table-wrapper">
+      <div class="card">
         <table class="data-table" id="tableLogs">
           <thead>
             <tr>
@@ -175,203 +241,213 @@
             </tr>
           </thead>
           <tbody id="bodyTableLogs">
-            <tr><td colspan="6" class="loading-cell">Chargement...</td></tr>
+            <tr><td colspan="6" class="loading-cell">Chargement…</td></tr>
           </tbody>
         </table>
       </div>
+
     </section>
 
   </main>
 
-  <!-- ====== RÉSULTAT FINAL ====== -->
+  <!-- ═══ MODALES ═══ -->
+
+  <!-- Résultat final -->
   <div class="modal-overlay" id="modalResultat" style="display:none;">
-    <div class="modal-box modal-resultat">
-      <div class="resultat-header">✅ TRAITEMENT TERMINÉ</div>
-      <div class="resultat-grid" id="resultatGrid">
-        <!-- Rempli dynamiquement -->
+    <div class="modal modal-result">
+      <div class="result-hero">
+        <div class="result-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        </div>
+        <h2>Traitement terminé</h2>
+        <p>Toutes les fiches ont été traitées</p>
       </div>
-      <div class="resultat-actions">
-        <button class="btn btn-secondary" onclick="afficherOnglet('logs'); fermerModal('modalResultat')">
-          Voir le log détaillé
-        </button>
-        <button class="btn btn-primary" onclick="reinitialiserUpload(); fermerModal('modalResultat')">
-          Nouveau traitement
-        </button>
+      <div class="resultat-grid" id="resultatGrid"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="afficherOnglet('logs'); fermerModal('modalResultat')">Voir les journaux</button>
+        <button class="btn btn-primary" onclick="reinitialiserUpload(); fermerModal('modalResultat')">Nouveau traitement</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== MODALE FORMULAIRE SALARIÉ ====== -->
+  <!-- Formulaire salarié -->
   <div class="modal-overlay" id="modalSalarie" style="display:none;">
-    <div class="modal-box">
+    <div class="modal">
       <div class="modal-header">
         <h3 id="titreFormulaire">Ajouter un salarié</h3>
-        <button class="modal-close" onclick="fermerModal('modalSalarie')">✕</button>
+        <button class="btn-close" onclick="fermerModal('modalSalarie')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
-
       <form id="formSalarie" onsubmit="soumettreFormulaire(event)">
         <input type="hidden" id="modeFormulaire" value="ajouter">
         <input type="hidden" id="nomPrenomOriginal" value="">
-
-        <div class="form-group">
-          <label for="fieldNom">NOM <span class="required">*</span></label>
-          <input type="text" id="fieldNom" placeholder="Ex: DUPONT"
-                 required oninput="this.value = this.value.toUpperCase()">
-          <small>Automatiquement converti en majuscules</small>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fieldNom">NOM <span class="req">*</span></label>
+              <input type="text" id="fieldNom" placeholder="DUPONT" required oninput="this.value = this.value.toUpperCase()">
+              <span class="form-hint">Converti automatiquement en majuscules</span>
+            </div>
+            <div class="form-group">
+              <label for="fieldPrenom">Prénom <span class="req">*</span></label>
+              <input type="text" id="fieldPrenom" placeholder="Jean" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fieldEmail">Email professionnel <span class="req">*</span></label>
+            <input type="email" id="fieldEmail" placeholder="jean.dupont@entreprise.ch" required>
+          </div>
+          <div class="form-group" id="groupeDateEntree">
+            <label for="fieldDateEntree">Date d'entrée <span class="req">*</span></label>
+            <input type="date" id="fieldDateEntree" required>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label for="fieldPrenom">Prénom <span class="required">*</span></label>
-          <input type="text" id="fieldPrenom" placeholder="Ex: Jean" required>
-        </div>
-
-        <div class="form-group">
-          <label for="fieldEmail">Email professionnel <span class="required">*</span></label>
-          <input type="email" id="fieldEmail" placeholder="jean.dupont@entreprise.ch"
-                 required id="ajouter-email">
-        </div>
-
-        <div class="form-group" id="groupeDateEntree">
-          <label for="fieldDateEntree">Date d'entrée <span class="required">*</span></label>
-          <input type="date" id="fieldDateEntree" required>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="fermerModal('modalSalarie')">
-            Annuler
-          </button>
-          <button type="submit" class="btn btn-primary" id="btnSoumettreForm">
-            Enregistrer
-          </button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="fermerModal('modalSalarie')">Annuler</button>
+          <button type="submit" class="btn btn-primary" id="btnSoumettreForm">Enregistrer</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ====== MODALE CONFIRMATION SUPPRESSION ====== -->
+  <!-- Confirmation suppression -->
   <div class="modal-overlay" id="modalSuppression" style="display:none;">
-    <div class="modal-box modal-danger">
-      <div class="modal-header">
-        <h3>⚠️ Confirmation de suppression</h3>
-        <button class="modal-close" onclick="fermerModal('modalSuppression')">✕</button>
+    <div class="modal modal-sm">
+      <div class="modal-header modal-header-danger">
+        <div class="modal-icon modal-icon-danger">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="17"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="modal-header-text">
+          <h3>Confirmer la désactivation</h3>
+          <p>Cette action est irréversible</p>
+        </div>
+        <button class="btn-close" onclick="fermerModal('modalSuppression')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
       <div class="modal-body">
-        <p id="messageSuppression"></p>
-        <p class="danger-warning">
-          <strong>⚠️ Cette action est irréversible.</strong><br>
-          Le salarié sera marqué comme "Inactif".<br>
-          Son dossier Drive sera conservé.
-        </p>
+        <p id="messageSuppression" style="margin-bottom:12px"></p>
+        <div class="alert alert-warning">Le salarié sera marqué inactif. Son dossier Drive est conservé.</div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="fermerModal('modalSuppression')">
-          ❌ Annuler
-        </button>
-        <button class="btn btn-danger" onclick="confirmerSuppression()" id="btnConfirmerSuppression">
-          ✅ Confirmer la désactivation
-        </button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="fermerModal('modalSuppression')">Annuler</button>
+        <button class="btn btn-danger" onclick="confirmerSuppression()" id="btnConfirmerSuppression">Désactiver</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== MODALE ALERTE PDF CORROMPU ====== -->
+  <!-- PDF corrompu -->
   <div class="modal-overlay" id="modalPDFCorrompu" style="display:none;">
-    <div class="modal-box modal-warning">
-      <div class="modal-header">
-        <h3>⚠️ Fichier suspect</h3>
-        <button class="modal-close" onclick="fermerModal('modalPDFCorrompu')">✕</button>
+    <div class="modal modal-sm">
+      <div class="modal-header modal-header-warning">
+        <div class="modal-icon modal-icon-warning">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="17"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="modal-header-text">
+          <h3>Fichier suspect</h3>
+          <p>Anomalie détectée à la lecture</p>
+        </div>
+        <button class="btn-close" onclick="fermerModal('modalPDFCorrompu')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
       <div class="modal-body">
-        <p>Le fichier semble corrompu ou illisible.</p>
-        <p>Voulez-vous continuer quand même ?</p>
+        <p>Le fichier semble corrompu ou illisible. Voulez-vous continuer quand même ?</p>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="fermerModal('modalPDFCorrompu'); reinitialiserUpload()">
-          ❌ Annuler
-        </button>
-        <button class="btn btn-warning" onclick="continuerMalgre()">
-          ⚠️ Continuer quand même
-        </button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="fermerModal('modalPDFCorrompu'); reinitialiserUpload()">Annuler</button>
+        <button class="btn btn-warning" onclick="continuerMalgre()">Continuer quand même</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== MODALE SALARIÉ NON TROUVÉ ====== -->
+  <!-- Salarié introuvable -->
   <div class="modal-overlay" id="modalSalarieIntrouvable" style="display:none;">
-    <div class="modal-box modal-warning">
-      <div class="modal-header">
-        <h3>⚠️ Salarié non trouvé</h3>
-        <button class="modal-close" onclick="fermerModal('modalSalarieIntrouvable')">✕</button>
+    <div class="modal modal-sm">
+      <div class="modal-header modal-header-warning">
+        <div class="modal-icon modal-icon-warning">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="17"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="modal-header-text">
+          <h3>Salarié introuvable</h3>
+          <p>Aucune correspondance dans la base</p>
+        </div>
+        <button class="btn-close" onclick="fermerModal('modalSalarieIntrouvable')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
       <div class="modal-body">
         <p id="messageSalarieIntrouvable"></p>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="gererSalarieIntrouvable('ignorer')">
-          Ignorer cette page
-        </button>
-        <button class="btn btn-primary" onclick="gererSalarieIntrouvable('creer')">
-          Créer le salarié
-        </button>
-        <button class="btn btn-danger" onclick="gererSalarieIntrouvable('stopper')">
-          Stopper
-        </button>
+      <div class="modal-footer modal-footer-3">
+        <button class="btn btn-ghost" onclick="gererSalarieIntrouvable('ignorer')">Ignorer la page</button>
+        <button class="btn btn-primary" onclick="gererSalarieIntrouvable('creer')">Créer le salarié</button>
+        <button class="btn btn-danger" onclick="gererSalarieIntrouvable('stopper')">Stopper</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== MODALE EMAIL MANQUANT ====== -->
+  <!-- Email manquant -->
   <div class="modal-overlay" id="modalEmailManquant" style="display:none;">
-    <div class="modal-box modal-warning">
-      <div class="modal-header">
-        <h3>📧 Email manquant</h3>
-        <button class="modal-close" onclick="fermerModal('modalEmailManquant')">✕</button>
+    <div class="modal modal-sm">
+      <div class="modal-header modal-header-warning">
+        <div class="modal-icon modal-icon-warning">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="17"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        </div>
+        <div class="modal-header-text">
+          <h3>Email manquant</h3>
+          <p>Information requise pour l'envoi</p>
+        </div>
+        <button class="btn-close" onclick="fermerModal('modalEmailManquant')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
       <div class="modal-body">
-        <p id="messageEmailManquant"></p>
+        <p id="messageEmailManquant" style="margin-bottom:16px"></p>
         <div class="form-group">
-          <label>Saisir l'email :</label>
+          <label>Adresse email</label>
           <input type="email" id="emailManquantInput" placeholder="prenom.nom@entreprise.ch">
         </div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="gererEmailManquant('ignorer')">
-          Ignorer
-        </button>
-        <button class="btn btn-primary" onclick="gererEmailManquant('sauvegarder')">
-          Enregistrer et continuer
-        </button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="gererEmailManquant('ignorer')">Ignorer</button>
+        <button class="btn btn-primary" onclick="gererEmailManquant('sauvegarder')">Enregistrer et continuer</button>
       </div>
     </div>
   </div>
 
-  <!-- ====== MODALE CONFIRMATION GLOBALE AVANT ENVOI ====== -->
+  <!-- Confirmation envoi groupé -->
   <div class="modal-overlay" id="modalConfirmationEnvoi" style="display:none;">
-    <div class="modal-box modal-large">
+    <div class="modal modal-lg">
       <div class="modal-header">
-        <h3>📋 Confirmation avant envoi groupé</h3>
-        <button class="modal-close" onclick="fermerModal('modalConfirmationEnvoi')">✕</button>
+        <div>
+          <h3>Confirmation d'envoi groupé</h3>
+          <p class="modal-sub">Vérifiez les destinataires avant envoi</p>
+        </div>
+        <button class="btn-close" onclick="fermerModal('modalConfirmationEnvoi')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
       <div class="modal-body">
-        <div class="recap-box" id="recapBox">
-          <!-- Rempli dynamiquement -->
-        </div>
-        <div class="recap-liste" id="recapListe">
-          <!-- Rempli dynamiquement -->
+        <div class="recap-box" id="recapBox"></div>
+        <div class="recap-scroll">
+          <div id="recapListe"></div>
         </div>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-danger" onclick="annulerEnvoi()">
-          ❌ Annuler
-        </button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="annulerEnvoi()">Annuler</button>
         <button class="btn btn-success" onclick="confirmerEnvoi()">
-          ✅ Confirmer et envoyer
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+          Confirmer et envoyer
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ====== TOAST NOTIFICATIONS ====== -->
+  <!-- ═══ TOASTS ═══ -->
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="pdf-lib.min.js"></script>
