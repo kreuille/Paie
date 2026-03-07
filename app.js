@@ -278,12 +278,18 @@ function traiterFichierSelectionne(fichier) {
 
   const zone = document.getElementById('uploadZone');
   zone.innerHTML = `
-    <div class="upload-icon">✅</div>
-    <h3>${fichier.name}</h3>
-    <p>${formaterTaille(fichier.size)}</p>
-    <button class="btn btn-secondary mt-8" onclick="reinitialiserUpload()">
-      Changer de fichier
-    </button>`;
+    <div class="upload-inner">
+      <div class="upload-icon" style="color:var(--green)">
+        <svg viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" width="52" height="52">
+          <circle cx="26" cy="26" r="21" stroke-opacity=".2"/>
+          <path d="M14 27l9 9 15-17"/>
+        </svg>
+      </div>
+      <p class="upload-heading">${fichier.name}</p>
+      <p class="upload-hint">${formaterTaille(fichier.size)}</p>
+      <button class="btn btn-ghost" onclick="reinitialiserUpload()">Changer de fichier</button>
+    </div>`;
 
   // Afficher le champ période
   document.getElementById('periodeField').style.display = 'flex';
@@ -443,7 +449,12 @@ async function executerEtape(numero, message, fn) {
   const statutEl = document.getElementById('statut' + numero);
 
   etapeEl.classList.add('active');
-  statutEl.textContent = '⏳';
+  statutEl.innerHTML = `<svg class="statut-spin" viewBox="0 0 16 16" fill="none"
+    stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"
+    style="color:var(--indigo)">
+    <circle cx="8" cy="8" r="5.5" stroke-opacity=".2"/>
+    <path d="M8 2.5a5.5 5.5 0 015.5 5.5"/>
+  </svg>`;
 
   mettreAJourProgression(numero - 1);
 
@@ -451,13 +462,17 @@ async function executerEtape(numero, message, fn) {
     const result = await fn();
     etapeEl.classList.remove('active');
     etapeEl.classList.add('done');
-    statutEl.textContent = '✅';
+    statutEl.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+      style="color:var(--green)"><path d="M3 8l4 4 6-6"/></svg>`;
     mettreAJourProgression(numero);
     return result;
   } catch (error) {
     etapeEl.classList.remove('active');
     etapeEl.classList.add('error');
-    statutEl.textContent = '❌';
+    statutEl.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor"
+      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+      style="color:var(--red)"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
     toast('Étape ' + numero + ' : ' + error.message, 'error');
     throw error;
   }
@@ -667,21 +682,30 @@ function reinitialiserUpload() {
 
   const zone = document.getElementById('uploadZone');
   zone.innerHTML = `
-    <div class="upload-icon">📄</div>
-    <h3>Glisser-déposer votre PDF ici</h3>
-    <p>ou</p>
-    <label class="btn btn-primary upload-label">
-      Sélectionner un fichier PDF
-      <input type="file" id="fileInput" accept=".pdf" onchange="gererSelectionFichier(this)">
-    </label>
-    <p class="upload-info">Format accepté : PDF uniquement — Toutes tailles</p>`;
+    <div class="upload-inner">
+      <div class="upload-icon">
+        <svg viewBox="0 0 52 52" fill="none" stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round" width="52" height="52">
+          <rect x="6" y="6" width="32" height="40" rx="3" stroke-opacity=".3"/>
+          <path d="M20 6V4a2 2 0 012-2h14.172a2 2 0 011.414.586l5.828 5.828A2 2 0 0144 9.828V46a2 2 0 01-2 2H22a2 2 0 01-2-2v-2" stroke-opacity=".3"/>
+          <path d="M13 30V18M7 24l6-6 6 6"/>
+        </svg>
+      </div>
+      <p class="upload-heading">Glissez-déposez votre PDF ici</p>
+      <p class="upload-or">ou</p>
+      <label class="btn btn-outline upload-label">
+        Parcourir les fichiers
+        <input type="file" id="fileInput" accept=".pdf" onchange="gererSelectionFichier(this)">
+      </label>
+      <p class="upload-hint">Format PDF uniquement · Toutes tailles acceptées</p>
+    </div>`;
 
   // Réinitialiser les étapes
   for (let i = 1; i <= 7; i++) {
     const el = document.getElementById('etape' + i);
     if (el) {
       el.classList.remove('active', 'done', 'error');
-      document.getElementById('statut' + i).textContent = '⏳';
+      document.getElementById('statut' + i).innerHTML = '';
     }
   }
   document.getElementById('progressBar').style.width = '0%';
@@ -907,8 +931,10 @@ function toast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const el = document.createElement('div');
   el.className = `toast ${type}`;
+  const icons = { success: '✓', error: '✕', warning: '!', info: 'i' };
+  const icon = icons[type] || 'i';
   el.innerHTML = `
-    <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+    <span class="toast-ico">${icon}</span>
     <span>${message}</span>`;
   container.appendChild(el);
   setTimeout(() => el.remove(), 4000);
