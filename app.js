@@ -332,6 +332,8 @@ async function lancerTraitement() {
 
     // Découper le PDF en pages individuelles côté navigateur (pdf-lib)
     STATE.pagesBase64 = await splitPDFEnPages(STATE.fichierPDF);
+    console.log('[SPLIT] STATE.pagesBase64.length =', STATE.pagesBase64.length,
+      '| tailles :', STATE.pagesBase64.map(p => p ? p.length : 0));
     if (STATE.pagesBase64.length === 0) {
       toast('⚠️ pdf-lib indisponible : les pages ne seront pas individualisées automatiquement.', 'warning');
     }
@@ -403,6 +405,13 @@ async function lancerTraitement() {
   // ÉTAPES 6, 7, 8 — Traitement final (via n8n ou directement GAS)
   await executerEtape(6, 'Découpage et stockage des fiches...', async () => {
     const mappingFiltré = STATE.mappingPages.filter(m => m.inclure !== false);
+
+    // Diagnostic avant envoi
+    console.log('[CONFIRM] mapping à envoyer :', mappingFiltré.map(m => ({
+      nomPrenom: m.nomPrenom,
+      pageIndex: m.pageIndex,
+      pageBase64Len: m.pageBase64 ? m.pageBase64.length : 0,
+    })));
 
     // Toujours appel GAS direct en JSON : les pageBase64 (200KB+/page)
     // ne survivent pas à la sérialisation form-encoded de n8n bodyParameters

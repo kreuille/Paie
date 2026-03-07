@@ -1062,6 +1062,11 @@ function traiterConfirmationEnvoi(fileId, mapping, periode) {
   const avecPages = mapping.filter(function(i) { return !!i.pageBase64; }).length;
   Logger.log('traiterConfirmationEnvoi — ' + mapping.length + ' fiche(s), ' +
     avecPages + ' avec pageBase64 fourni par le navigateur');
+  mapping.forEach(function(item, idx) {
+    Logger.log('  item[' + idx + '] ' + item.nomPrenom +
+      ' | pageIndex=' + item.pageIndex +
+      ' | pageBase64=' + (item.pageBase64 ? item.pageBase64.substring(0, 20) + '… (' + item.pageBase64.length + ' chars)' : 'NULL'));
+  });
 
   const mappingEnrichi = mapping;
 
