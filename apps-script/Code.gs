@@ -960,9 +960,13 @@ function extrairePDF(fileId) {
       Logger.log('extrairePDF — aucun découpage possible, fallback texte complet');
     }
 
+    // Charger la liste des salariés une seule fois pour valider les noms extraits
+    var salariesList = [];
+    try { salariesList = listerSalaries(); } catch(e) { Logger.log('extrairePDF: impossible de charger les salariés: ' + e.message); }
+
     const pages = rawSections.map(function(section, idx) {
       const lignes = section.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
-      const nomPrenom = extraireNomPrenomTexte(lignes);
+      const nomPrenom = extraireNomPrenomTexte(lignes, salariesList);
       return {
         pageIndex: idx,
         texte: lignes.slice(0, 5).join(' | '),
@@ -984,29 +988,57 @@ function extrairePDF(fileId) {
 
 /**
  * Identifie NOM_Prenom depuis un tableau de lignes texte.
- * Supporte : "DUPONT Jean", "Jean DUPONT"
+ * Collecte tous les candidats puis préfère celui qui correspond à un salarié connu.
+ * Supporte : "DUPONT Jean", "Jean DUPONT", "Nom : DUPONT Jean", et variantes avec
+ * contenu supplémentaire sur la ligne (date, montant, etc.)
  */
-function extraireNomPrenomTexte(lignes) {
-  var accentClasses = 'ÀÂÄÉÈÊËÏÎÙÛÜÇ';
-  for (var i = 0; i < Math.min(lignes.length, 20); i++) {
-    var ligne = lignes[i];
+function extraireNomPrenomTexte(lignes, salaries) {
+  var candidats = [];
 
-    // Pattern 1 : NOM Prénom — ex: "DUPONT Jean" ou "MARTIN Sophie"
-    var m1 = ligne.match(/^([A-Z\u00C0-\u00DC][A-Z\u00C0-\u00DC\-\']{1,})\s+([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})$/);
-    if (m1) return m1[1].trim() + '_' + m1[2].trim();
+  for (var i = 0; i < Math.min(lignes.length, 30); i++) {
+    var ligne = lignes[i].trim();
+    if (!ligne) continue;
 
-    // Pattern 2 : Prénom NOM — ex: "Jean DUPONT"
-    var m2 = ligne.match(/^([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})\s+([A-Z\u00C0-\u00DC]{2,})$/);
-    if (m2) return m2[2] + '_' + m2[1];
+    // Pattern 1 : "DUPONT Jean" — NOM tout-majuscule + Prénom — avec ou sans contenu après
+    var m1 = ligne.match(/(?:^|\s)([A-Z\u00C0-\u00DC][A-Z\u00C0-\u00DC\-\']{1,})\s+([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})(?:[\s,;]|$)/);
+    if (m1) candidats.push(m1[1].trim() + '_' + m1[2].trim());
 
-    // Pattern 3 : label Nom/Employé/Salarié
-    var m3 = ligne.match(/(?:Nom|Employ[eé]|Collaborateur|Salari[eé])\s*[:\-]\s*([A-Z\u00C0-\u00DC][a-zA-Z\u00C0-\u00FC\s\-\']{2,})/i);
+    // Pattern 2 : "Jean DUPONT" — Prénom + NOM tout-majuscule — avec ou sans contenu après
+    var m2 = ligne.match(/(?:^|\s)([A-Z\u00C0-\u00DC][a-z\u00E0-\u00FC\-\']{1,})\s+([A-Z\u00C0-\u00DC][A-Z\u00C0-\u00DC\-\']{1,})(?:[\s,;]|$)/);
+    if (m2) candidats.push(m2[2].trim() + '_' + m2[1].trim());
+
+    // Pattern 3 : label "Nom :", "Employé :", etc.
+    var m3 = ligne.match(/(?:Nom|Employ[eé]|Collaborateur|Salari[eé]|Agent)\s*[:\-]\s*([A-Z\u00C0-\u00DC][a-zA-Z\u00C0-\u00FC\s\-\']{2,})/i);
     if (m3) {
       var parts = m3[1].trim().split(/\s+/);
-      if (parts.length >= 2) return parts[0].toUpperCase() + '_' + parts[1];
+      if (parts.length >= 2) {
+        // Essai NOM Prénom et Prénom NOM
+        candidats.push(parts[0].toUpperCase() + '_' + parts[1]);
+        if (parts[1] === parts[1].toUpperCase()) {
+          candidats.push(parts[1] + '_' + parts[0]);
+        }
+      }
     }
   }
-  return '';
+
+  if (!candidats.length) return '';
+
+  // Préférer un candidat qui correspond à un salarié connu
+  if (salaries && salaries.length) {
+    for (var c = 0; c < candidats.length; c++) {
+      for (var s = 0; s < salaries.length; s++) {
+        if (salaries[s].nomPrenom === candidats[c]) {
+          Logger.log('extraireNomPrenomTexte — correspondance DB : ' + candidats[c]);
+          return candidats[c];
+        }
+      }
+    }
+    // Aucun candidat dans la DB : log pour aider au diagnostic
+    Logger.log('extraireNomPrenomTexte — candidats sans correspondance DB : ' + candidats.join(', '));
+  }
+
+  // Fallback : premier candidat
+  return candidats[0];
 }
 
 /**
